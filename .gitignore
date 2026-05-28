@@ -1,0 +1,8 @@
+archive-data.json
+archive-data.tmp.json
+cloudflared.exe
+*.log
+.env
+.env.*
+
+.vercel

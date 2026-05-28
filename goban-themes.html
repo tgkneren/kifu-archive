@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Goban Tema Seçimi</title>
+    <script type="module" src="./goban-board.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #f5f1e8;
+        color: #1d2521;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 18px;
+      }
+
+      main {
+        width: min(100%, 1180px);
+        margin-inline: auto;
+        display: grid;
+        gap: 18px;
+      }
+
+      header {
+        display: grid;
+        gap: 6px;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(1.6rem, 4vw, 2.5rem);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      p {
+        color: #5f665e;
+        line-height: 1.4;
+      }
+
+      .themes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 14px;
+      }
+
+      .theme {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid rgb(173 157 127 / 55%);
+        border-radius: 8px;
+        background: rgb(255 250 241 / 72%);
+        box-shadow: 0 12px 30px rgb(85 65 35 / 8%);
+      }
+
+      .theme h2 {
+        font-size: 1rem;
+        line-height: 1.15;
+      }
+
+      .theme-note {
+        min-height: 38px;
+        font-size: 0.88rem;
+      }
+
+      goban-board {
+        width: min(100%, 280px);
+        max-width: none;
+        margin-inline: auto;
+      }
+
+      .classic goban-board {
+        --goban-board: #dcae62;
+        --goban-line: #2e1e10;
+        --goban-black: #161616;
+        --goban-white: #f5f1e7;
+        --goban-focus: #28666e;
+      }
+
+      .honey goban-board {
+        --goban-board: #e8bf73;
+        --goban-line: #4b3014;
+        --goban-black: #11100e;
+        --goban-white: #fbf5e9;
+        --goban-focus: #6d5d2c;
+      }
+
+      .bamboo goban-board {
+        --goban-board: #caa96e;
+        --goban-line: #253327;
+        --goban-black: #141711;
+        --goban-white: #f3ead8;
+        --goban-focus: #436b4a;
+      }
+
+      .walnut goban-board {
+        --goban-board: #a66e3c;
+        --goban-line: #1f160f;
+        --goban-black: #0f0f0f;
+        --goban-white: #f1e5d0;
+        --goban-focus: #9e6f3f;
+      }
+
+      .quiet goban-board {
+        --goban-board: #d8c49a;
+        --goban-line: #3a3528;
+        --goban-black: #151515;
+        --goban-white: #f6f2e9;
+        --goban-focus: #6f7b68;
+      }
+
+      @media (max-width: 620px) {
+        body {
+          padding: 12px;
+        }
+
+        .themes {
+          grid-template-columns: 1fr;
+        }
+
+        goban-board {
+          width: min(100%, 82svw);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Goban görünüm seçenekleri</h1>
+        <p>Beğendiğin yönü seç; sonra ana uygulamadaki tahta temasını ona göre kalıcı hale getirelim.</p>
+      </header>
+
+      <section class="themes" aria-label="Goban tema seçenekleri">
+        <article class="theme classic">
+          <h2>1. Klasik kaya</h2>
+          <p class="theme-note">Şu anki tona yakın, dengeli ve okunaklı geleneksel görünüm.</p>
+          <goban-board size="19" disabled></goban-board>
+        </article>
+
+        <article class="theme honey">
+          <h2>2. Bal kaya</h2>
+          <p class="theme-note">Daha sıcak, canlı ve mobil ekranda parlak duran sarı kaya hissi.</p>
+          <goban-board size="19" disabled></goban-board>
+        </article>
+
+        <article class="theme bamboo">
+          <h2>3. Bambu sakin</h2>
+          <p class="theme-note">Daha mat, doğal ve göz yormayan yeşilimsi ahşap etkisi.</p>
+          <goban-board size="19" disabled></goban-board>
+        </article>
+
+        <article class="theme walnut">
+          <h2>4. Ceviz koyu</h2>
+          <p class="theme-note">Daha ciddi, kontrastlı ve taşları öne çıkaran koyu tahta.</p>
+          <goban-board size="19" disabled></goban-board>
+        </article>
+
+        <article class="theme quiet">
+          <h2>5. Sessiz çalışma</h2>
+          <p class="theme-note">Az doygun, kitap/inceleme hissi veren sakin ve profesyonel ton.</p>
+          <goban-board size="19" disabled></goban-board>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

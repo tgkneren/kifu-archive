@@ -1,0 +1,4707 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1420" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Goban" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Goban</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./app-icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./app-icon.svg" />
+    <script type="module" src="./goban-board.js?v=core-20260525-4"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background:
+          radial-gradient(circle at top left, rgb(255 250 241 / 85%), transparent 34rem),
+          linear-gradient(135deg, #f7f3ea 0%, #ece4d5 100%);
+        color: #1d2521;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100svh;
+        margin: 0;
+        padding: max(12px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom));
+      }
+
+      main {
+        width: min(100%, 980px);
+        margin-inline: auto;
+        display: grid;
+        gap: 12px;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        border: 1px solid rgb(173 157 127 / 22%);
+        border-radius: 14px;
+        background: rgb(255 250 241 / 54%);
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .icon-action {
+        min-width: 40px;
+        width: 40px;
+        height: 40px;
+        min-height: 40px;
+        padding: 0;
+        display: inline-grid;
+        place-items: center;
+        border-radius: 10px;
+        background: rgb(255 255 255 / 62%);
+        color: #1d2521;
+        box-shadow:
+          0 6px 16px rgb(65 45 20 / 8%),
+          inset 0 1px 0 rgb(255 255 255 / 88%);
+      }
+
+      .icon-action svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+      }
+
+      .new-board-action {
+        width: auto;
+        min-width: 72px;
+        grid-auto-flow: column;
+        gap: 7px;
+        padding: 0 12px;
+        border-color: rgb(216 167 93 / 72%);
+        color: #1d2521;
+        font-size: 0.82rem;
+        font-weight: 800;
+      }
+
+      .new-board-action svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .brand {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.45rem, 5vw, 2.35rem);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        margin: 0;
+        color: #62685f;
+        font-size: 0.9rem;
+        line-height: 1.3;
+      }
+
+      .autosave-status {
+        margin: 0;
+        color: rgb(98 104 95 / 78%);
+        font-size: 0.74rem;
+        font-weight: 720;
+        line-height: 1.25;
+      }
+
+      .play-controls,
+      .file-controls,
+      .move-nav,
+      .variations {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+      }
+
+      .play-controls {
+        justify-content: flex-end;
+      }
+
+      button {
+        min-height: 42px;
+        border: 1px solid #b8aa90;
+        border-radius: 8px;
+        background: #fffaf1;
+        color: #1d2521;
+        flex: 0 0 auto;
+        font: inherit;
+        font-size: 0.92rem;
+        font-weight: 760;
+        padding: 0 12px;
+        box-shadow: 0 1px 0 rgb(255 255 255 / 80%) inset;
+        touch-action: manipulation;
+      }
+
+      .primary-action {
+        background: #232820;
+        border-color: #394236;
+        color: #fffaf1;
+      }
+
+      .secondary-action {
+        background: rgb(255 250 241 / 58%);
+      }
+
+      .future-action {
+        color: rgb(29 37 33 / 54%);
+      }
+
+      button[aria-pressed="true"] {
+        background: #1d2521;
+        border-color: #1d2521;
+        color: #fffaf1;
+      }
+
+      button:disabled {
+        color: #8e887c;
+        background: #eee7da;
+        border-color: #d6cbb8;
+      }
+
+      input,
+      select,
+      textarea {
+        min-height: 40px;
+        width: 100%;
+        border: 1px solid #d1c4ac;
+        border-radius: 8px;
+        background: #fffdf7;
+        color: #1d2521;
+        font: inherit;
+        padding: 0 10px;
+      }
+
+      label {
+        display: grid;
+        gap: 5px;
+        color: #596057;
+        font-size: 0.8rem;
+        font-weight: 760;
+      }
+
+      goban-board {
+        width: min(100%, 94svw, 76svh, 760px);
+        margin-inline: auto;
+      }
+
+      body[data-theme="classic"] goban-board {
+        --goban-board: #dcae62;
+        --goban-line: #2e1e10;
+        --goban-black: #161616;
+        --goban-white: #f5f1e7;
+        --goban-focus: #28666e;
+      }
+
+      body[data-theme="walnut"] goban-board {
+        --goban-board: #a66e3c;
+        --goban-line: #1f160f;
+        --goban-black: #0f0f0f;
+        --goban-white: #f1e5d0;
+        --goban-focus: #9e6f3f;
+      }
+
+      body[data-theme="bamboo"] goban-board {
+        --goban-board: #caa96e;
+        --goban-line: #253327;
+        --goban-black: #141711;
+        --goban-white: #f3ead8;
+        --goban-focus: #436b4a;
+      }
+
+      .board-zone {
+        display: grid;
+        gap: 8px;
+        justify-items: center;
+        padding: 0;
+      }
+
+      .move-nav {
+        width: min(100%, 560px);
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        align-items: center;
+        justify-content: center;
+        overflow: visible;
+        gap: 6px;
+      }
+
+      .move-nav button {
+        width: 100%;
+        min-width: 38px;
+        min-height: 38px;
+        padding: 0 10px;
+      }
+
+      .move-nav [data-play] {
+        overflow: hidden;
+        padding-inline: 0;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .move-nav [data-play] svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+
+      .move-counter {
+        grid-column: 1 / 3;
+      }
+
+      .stone-lock[data-lock-color="black"] {
+        grid-column: 3;
+      }
+
+      .stone-lock[data-lock-color="white"] {
+        grid-column: 4;
+      }
+
+      .move-nav [data-pass] {
+        grid-column: 5 / 8;
+      }
+
+      .stone-lock {
+        width: 42px;
+        min-width: 42px;
+        padding: 0;
+        position: relative;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .stone-lock::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        display: block;
+        transform: translate(-50%, -50%);
+        box-shadow:
+          inset 0 1px 2px rgb(255 255 255 / 22%),
+          inset 0 -4px 7px rgb(0 0 0 / 24%),
+          0 4px 9px rgb(0 0 0 / 22%);
+      }
+
+      .stone-lock[data-lock-color="black"]::before {
+        background: radial-gradient(circle at 38% 30%, #5f5f5f 0 12%, #171717 48%, #050505 100%);
+      }
+
+      .stone-lock[data-lock-color="white"]::before {
+        background: radial-gradient(circle at 38% 30%, #fff 0 18%, #f6f0e3 64%, #c9bea9 100%);
+        border: 1px solid rgb(145 133 110 / 72%);
+        box-shadow:
+          inset 0 1px 3px rgb(255 255 255 / 80%),
+          inset 0 -5px 8px rgb(70 55 35 / 14%),
+          0 4px 9px rgb(0 0 0 / 16%);
+      }
+
+      .stone-lock[aria-pressed="true"] {
+        border-color: rgb(172 139 84 / 62%);
+        background: rgb(172 139 84 / 12%);
+      }
+
+      .move-counter {
+        min-width: 66px;
+        color: #41493f;
+        flex: 0 0 auto;
+        font-size: 0.9rem;
+        font-weight: 800;
+        text-align: center;
+      }
+
+      .game-strip {
+        display: grid;
+        gap: 8px;
+      }
+
+      .public-share-panel {
+        width: min(100%, 560px);
+        display: none;
+        gap: 9px;
+        padding: 11px 12px;
+        border: 1px solid rgb(173 157 127 / 34%);
+        border-radius: 10px;
+        background: rgb(255 250 241 / 66%);
+        box-shadow: 0 10px 24px rgb(85 65 35 / 8%);
+      }
+
+      body[data-public-context="true"] .public-share-panel {
+        display: grid;
+      }
+
+      .public-share-title {
+        margin: 0;
+        color: #1d2521;
+        font-size: 0.88rem;
+        font-weight: 850;
+        line-height: 1.25;
+      }
+
+      .public-share-meta {
+        margin: 0;
+        color: rgb(89 96 87 / 76%);
+        font-size: 0.74rem;
+        font-weight: 680;
+        line-height: 1.35;
+      }
+
+      .public-share-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .public-share-actions button {
+        min-height: 34px;
+        padding-inline: 10px;
+      }
+
+      .study-tools {
+        display: grid;
+        gap: 8px;
+      }
+
+      .captures {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .capture-box,
+      .panel {
+        border: 1px solid rgb(173 157 127 / 58%);
+        border-radius: 8px;
+        background: rgb(255 250 241 / 74%);
+        box-shadow: 0 10px 26px rgb(85 65 35 / 8%);
+        backdrop-filter: blur(8px);
+      }
+
+      .capture-box {
+        min-height: 68px;
+        display: grid;
+        grid-template-columns: 64px minmax(28px, auto);
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 8px;
+      }
+
+      .goke {
+        position: relative;
+        width: 64px;
+        height: 50px;
+        border-radius: 50% / 42%;
+        background:
+          radial-gradient(ellipse at 52% 34%, rgb(255 231 194 / 72%) 0 9%, transparent 30%),
+          radial-gradient(ellipse at 50% 47%, #d58b45 0 32%, #9a4f1f 61%, #54270f 100%);
+        box-shadow:
+          inset 0 2px 2px rgb(255 239 212 / 54%),
+          inset 0 -9px 14px rgb(45 18 7 / 54%),
+          0 9px 17px rgb(73 49 25 / 18%);
+        overflow: hidden;
+      }
+
+      .goke::before {
+        content: "";
+        position: absolute;
+        inset: 8px 8px 9px;
+        border-radius: 50% / 44%;
+        background:
+          radial-gradient(ellipse at 55% 31%, rgb(255 235 206 / 42%) 0 10%, transparent 34%),
+          radial-gradient(ellipse at 50% 56%, #b66328 0 38%, #7b3515 68%, #351607 100%);
+        box-shadow:
+          inset 0 8px 12px rgb(73 25 7 / 28%),
+          inset 0 -4px 8px rgb(255 216 164 / 16%),
+          0 0 0 2px rgb(255 215 164 / 22%),
+          0 -1px 0 rgb(255 242 220 / 38%);
+      }
+
+      .goke::after {
+        content: "";
+        position: absolute;
+        inset: 4px 7px auto;
+        height: 19px;
+        border-radius: 50%;
+        background:
+          linear-gradient(180deg, rgb(255 241 220 / 42%) 0%, rgb(255 229 189 / 10%) 42%, transparent 100%),
+          repeating-linear-gradient(100deg, rgb(83 31 10 / 0.22) 0 1px, transparent 1px 7px);
+        opacity: 0.85;
+        filter: blur(0.18px);
+        pointer-events: none;
+      }
+
+      .goke-count {
+        min-width: 2ch;
+        color: #1d2521;
+        font-size: 1.2rem;
+        line-height: 1;
+        font-weight: 850;
+      }
+
+      .prisoner-stones {
+        position: absolute;
+        inset: 0;
+        display: block;
+        z-index: 1;
+      }
+
+      .stone-dot {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        position: absolute;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 2px 4px rgb(0 0 0 / 24%);
+      }
+
+      .stone-dot.black {
+        background: #161616;
+        box-shadow: inset 3px 3px 6px rgb(255 255 255 / 18%);
+      }
+
+      .stone-dot.white {
+        background: #f5f1e7;
+        border: 1px solid #b5ad9e;
+        box-shadow: inset -3px -3px 6px rgb(0 0 0 / 10%);
+      }
+
+      .panels {
+        display: grid;
+        gap: 10px;
+      }
+
+      .panel {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .panel-title {
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.1;
+      }
+
+      .panel-note {
+        color: #6c6a61;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+
+      .game-info {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .game-info label:first-child {
+        grid-column: 1 / -1;
+      }
+
+      .file-controls {
+        flex-wrap: wrap;
+      }
+
+      .identity-form,
+      .settings-form,
+      .file-stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .field-grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      .field-grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .field-grid .wide {
+        grid-column: 1 / -1;
+      }
+
+      .result-combo {
+        display: grid;
+        grid-template-columns: minmax(132px, 0.88fr) auto minmax(168px, 1fr);
+        align-items: center;
+        gap: 8px;
+      }
+
+      .result-combo[data-result-state="single"] {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .result-combo span {
+        color: rgb(89 96 87 / 70%);
+        font-size: 0.78rem;
+        font-weight: 850;
+      }
+
+      .result-combo[data-result-state="single"] span {
+        display: none;
+      }
+
+      .result-detail-picker {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(64px, 0.72fr);
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .result-detail-picker input {
+        min-width: 0;
+        padding-right: 10px;
+      }
+
+      .result-detail-picker[hidden] {
+        display: none;
+      }
+
+      .result-detail-picker[data-points="off"] {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .result-detail-picker[data-points="off"] input {
+        display: none;
+      }
+
+      .result-detail-toggle {
+        display: none;
+        position: absolute;
+        right: 4px;
+        top: 4px;
+        width: 34px;
+        min-width: 34px;
+        height: calc(100% - 8px);
+        min-height: 30px;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        color: #1d2521;
+        font-size: 1rem;
+        padding: 0;
+      }
+
+      .result-detail-menu {
+        position: absolute;
+        z-index: 40;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        display: grid;
+        gap: 4px;
+        padding: 6px;
+        border: 1px solid #c9baa2;
+        border-radius: 10px;
+        background: #fffdf7;
+        box-shadow: 0 16px 34px rgb(45 31 15 / 20%);
+      }
+
+      .result-detail-menu[hidden] {
+        display: none;
+      }
+
+      .result-detail-menu button {
+        justify-content: flex-start;
+        width: 100%;
+        min-height: 38px;
+        background: #fffaf1;
+        text-align: left;
+      }
+
+      .field-note {
+        color: rgb(89 96 87 / 72%);
+        font-size: 0.76rem;
+        font-weight: 650;
+        line-height: 1.35;
+      }
+
+      .section-kicker {
+        margin: 2px 0 -2px;
+        color: rgb(89 96 87 / 74%);
+        font-size: 0.72rem;
+        font-weight: 850;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .file-action {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        min-height: 62px;
+        padding: 10px 12px;
+        border: 1px solid rgb(173 157 127 / 42%);
+        border-radius: 8px;
+        background: rgb(255 250 241 / 52%);
+        color: inherit;
+        text-align: left;
+      }
+
+      .file-action strong {
+        display: block;
+        color: #1d2521;
+        font-size: 0.92rem;
+      }
+
+      .file-action span {
+        display: block;
+        margin-top: 3px;
+        color: rgb(89 96 87 / 78%);
+        font-size: 0.78rem;
+        font-weight: 650;
+        line-height: 1.25;
+      }
+
+      .file-action .action-mark {
+        color: rgb(29 37 33 / 54%);
+        font-size: 1rem;
+      }
+
+      .archive-list,
+      .filter-row,
+      .favorite-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .archive-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .view-toggle {
+        min-width: 32px;
+        width: 32px;
+        min-height: 30px;
+        height: 30px;
+        padding: 0;
+        display: inline-grid;
+        place-items: center;
+        color: #3c3428;
+      }
+
+      .archive-section {
+        border: 1px solid rgb(173 157 127 / 36%);
+        border-radius: 8px;
+        background: rgb(255 250 241 / 42%);
+        overflow: hidden;
+      }
+
+      .archive-section summary {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 0 12px;
+        color: #1d2521;
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-weight: 850;
+        list-style: none;
+      }
+
+      .archive-section summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .archive-section summary::after {
+        content: ">";
+        color: rgb(89 96 87 / 62%);
+        transform: rotate(90deg);
+      }
+
+      .archive-section:not([open]) summary::after {
+        transform: rotate(0deg);
+      }
+
+      .archive-folder {
+        margin-inline: 8px;
+        border: 1px solid rgb(173 157 127 / 26%);
+        border-radius: 8px;
+        background: rgb(255 250 241 / 28%);
+        overflow: hidden;
+      }
+
+      .archive-folder + .archive-folder {
+        margin-top: 6px;
+      }
+
+      .archive-folder summary {
+        min-height: 40px;
+        padding-inline: 10px;
+        font-size: 0.78rem;
+      }
+
+      .archive-folder .archive-section-body,
+      .archive-folder .archive-thumb-grid {
+        padding: 0 7px 7px;
+      }
+
+      .archive-section-body {
+        display: grid;
+        gap: 6px;
+        padding: 0 8px 8px;
+      }
+
+      .archive-game-row {
+        width: 100%;
+        min-height: 58px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto auto;
+        align-items: center;
+        gap: 9px;
+        padding: 9px 10px;
+        border: 1px solid rgb(173 157 127 / 26%);
+        border-radius: 8px;
+        background: rgb(255 250 241 / 46%);
+        color: inherit;
+        text-align: left;
+      }
+
+      .archive-game-row[role="button"] {
+        cursor: pointer;
+      }
+
+      .archive-game-row strong,
+      .thumb-card strong {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        color: #1d2521;
+        font-size: 0.78rem;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .archive-game-row span,
+      .thumb-card span {
+        display: block;
+        margin-top: 2px;
+        color: rgb(89 96 87 / 70%);
+        font-size: 0.68rem;
+        font-weight: 700;
+        line-height: 1.25;
+      }
+
+      .archive-game-row .action-mark {
+        color: rgb(89 96 87 / 52%);
+        font-size: 0.9rem;
+      }
+
+      .delete-action {
+        min-height: 30px;
+        padding: 0 9px;
+        border-color: rgb(163 76 58 / 24%);
+        background: rgb(163 76 58 / 7%);
+        color: #8f3d31;
+        font-size: 0.72rem;
+        font-weight: 820;
+      }
+
+      .danger-zone {
+        margin-top: 2px;
+        padding-top: 12px;
+        border-top: 1px solid rgb(173 157 127 / 26%);
+      }
+
+      .danger-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .danger-actions .delete-action {
+        min-height: 38px;
+      }
+
+      .publish-action {
+        min-height: 30px;
+        padding: 0 9px;
+        border-color: rgb(66 119 91 / 28%);
+        background: rgb(66 119 91 / 8%);
+        color: #2c694e;
+        font-size: 0.72rem;
+        font-weight: 820;
+      }
+
+      .info-action {
+        width: 30px;
+        min-width: 30px;
+        min-height: 30px;
+        padding: 0;
+        border-radius: 50%;
+        border-color: rgb(236 196 126 / 20%);
+        background: rgb(255 255 255 / 4%);
+        color: rgb(248 245 239 / 72%);
+        font-size: 0.82rem;
+        font-weight: 900;
+        line-height: 1;
+        box-shadow: none;
+      }
+
+      .info-action:hover {
+        border-color: rgb(236 196 126 / 34%);
+        background: rgb(236 196 126 / 10%);
+        color: #fffaf1;
+      }
+
+      .archive-thumb-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .archive-section > .archive-thumb-grid {
+        padding: 0 8px 8px;
+      }
+
+      .thumb-card {
+        min-width: 0;
+        display: grid;
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid rgb(173 157 127 / 28%);
+        border-radius: 8px;
+        background: rgb(255 250 241 / 46%);
+        color: inherit;
+        text-align: left;
+      }
+
+      .board-thumb {
+        position: relative;
+        display: block;
+        margin: 0;
+        width: 42px;
+        aspect-ratio: 1;
+        border-radius: 5px;
+        background-color: #b9793f;
+        background-image:
+          linear-gradient(rgb(35 24 14 / 72%) 1px, transparent 1px),
+          linear-gradient(90deg, rgb(35 24 14 / 72%) 1px, transparent 1px);
+        background-size: calc((100% - 14px) / 18) calc((100% - 14px) / 18);
+        background-position: 7px 7px;
+        background-repeat: repeat;
+        box-shadow: inset 0 0 0 1px rgb(35 24 14 / 34%);
+        overflow: hidden;
+      }
+
+      .board-thumb.large {
+        width: 100%;
+      }
+
+      .thumb-stone {
+        position: absolute;
+        display: block;
+        margin: 0;
+        width: 5.6%;
+        min-width: 4px;
+        height: 5.6%;
+        min-height: 4px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+      }
+
+      .thumb-stone.black {
+        background: radial-gradient(circle at 34% 28%, #555 0 12%, #111 58%, #020202 100%);
+      }
+
+      .thumb-stone.white {
+        border: 1px solid rgb(120 108 88 / 56%);
+        background: radial-gradient(circle at 34% 28%, #fff 0 20%, #f2eadc 70%, #c8bda8 100%);
+      }
+
+      dialog.identity-dialog {
+        width: min(calc(100% - 24px), 390px);
+        border: 0;
+        border-radius: 14px;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+      }
+
+      dialog.identity-dialog::backdrop {
+        background: rgb(5 8 10 / 56%);
+        backdrop-filter: blur(8px);
+      }
+
+      .identity-card {
+        display: grid;
+        gap: 12px;
+        padding: 16px;
+        border: 1px solid rgb(173 157 127 / 38%);
+        border-radius: 14px;
+        background: #fffaf1;
+        color: #1d2521;
+        box-shadow: 0 24px 60px rgb(31 21 10 / 28%);
+      }
+
+      .identity-card h2,
+      .identity-card p {
+        margin: 0;
+      }
+
+      .identity-card h2 {
+        font-size: 1.05rem;
+        line-height: 1.2;
+      }
+
+      .identity-card p {
+        color: rgb(58 63 55 / 72%);
+        font-size: 0.82rem;
+        font-weight: 650;
+        line-height: 1.38;
+      }
+
+      .identity-warning {
+        padding: 10px;
+        border: 1px solid rgb(128 91 36 / 22%);
+        border-radius: 8px;
+        background: rgb(238 207 151 / 20%);
+      }
+
+      .identity-actions {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+      }
+
+      .handle-field {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        min-height: 40px;
+        border: 1px solid #d1c4ac;
+        border-radius: 8px;
+        background: #fffdf7;
+        color: #1d2521;
+        overflow: hidden;
+      }
+
+      .handle-prefix {
+        padding-left: 10px;
+        color: rgb(58 63 55 / 78%);
+        font-weight: 850;
+      }
+
+      .handle-field input {
+        min-height: 38px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        padding-left: 2px;
+      }
+
+      .choice-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .record-card {
+        display: grid;
+        gap: 7px;
+        padding: 11px 12px;
+        border: 1px solid rgb(173 157 127 / 42%);
+        border-radius: 8px;
+        background: rgb(255 250 241 / 50%);
+      }
+
+      .record-card.interactive {
+        cursor: pointer;
+      }
+
+      .record-card.interactive:focus-visible {
+        outline: 2px solid #d8a75d;
+        outline-offset: 2px;
+      }
+
+      .record-card button {
+        justify-self: start;
+        min-height: 32px;
+        padding-inline: 10px;
+      }
+
+      .record-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .record-actions button {
+        min-height: 32px;
+      }
+
+      .record-actions .delete-action {
+        color: #d98b7b;
+        border-color: rgb(217 139 123 / 24%);
+        background: rgb(217 139 123 / 8%);
+      }
+
+      .record-title {
+        margin: 0;
+        color: #1d2521;
+        font-size: 0.94rem;
+        line-height: 1.25;
+      }
+
+      .record-meta {
+        color: rgb(89 96 87 / 78%);
+        font-size: 0.78rem;
+        font-weight: 650;
+        line-height: 1.35;
+      }
+
+      .record-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .record-field {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      .record-field span:first-child {
+        color: rgb(89 96 87 / 62%);
+        font-size: 0.64rem;
+        font-weight: 850;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .record-field span:last-child {
+        color: #1d2521;
+        font-size: 0.78rem;
+        font-weight: 760;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .archive-browser {
+        display: grid;
+        gap: 10px;
+      }
+
+      .archive-collection-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .collection-card {
+        display: grid;
+        gap: 4px;
+        min-height: 68px;
+        padding: 11px 12px;
+        border: 1px solid rgb(173 157 127 / 34%);
+        border-radius: 8px;
+        background: rgb(255 250 241 / 44%);
+      }
+
+      .collection-card strong {
+        color: #1d2521;
+        font-size: 0.86rem;
+        line-height: 1.15;
+      }
+
+      .collection-card span {
+        color: rgb(89 96 87 / 74%);
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .chip {
+        display: inline-grid;
+        min-height: 24px;
+        place-items: center;
+        border: 1px solid rgb(173 157 127 / 36%);
+        border-radius: 999px;
+        padding: 0 8px;
+        color: rgb(89 96 87 / 86%);
+        font-size: 0.7rem;
+        font-weight: 780;
+      }
+
+      .chip.private {
+        color: #7a6845;
+      }
+
+      .chip.public {
+        color: #496e51;
+      }
+
+      .chip.unlisted {
+        color: #6b6578;
+      }
+
+      .summary-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .summary-row {
+        display: grid;
+        grid-template-columns: minmax(92px, 0.38fr) minmax(0, 1fr);
+        gap: 10px;
+        padding: 9px 0;
+        border-bottom: 1px solid rgb(173 157 127 / 24%);
+      }
+
+      .summary-row span:first-child {
+        color: rgb(89 96 87 / 72%);
+        font-size: 0.76rem;
+        font-weight: 760;
+      }
+
+      .summary-row span:last-child {
+        min-width: 0;
+        color: #1d2521;
+        font-size: 0.88rem;
+        font-weight: 720;
+        overflow-wrap: anywhere;
+      }
+
+      textarea {
+        min-height: 78px;
+        resize: vertical;
+        line-height: 1.35;
+        padding-block: 10px;
+      }
+
+      .variation-label {
+        flex: 0 0 auto;
+        color: #4a514b;
+        font-size: 0.86rem;
+        font-weight: 800;
+      }
+
+      @media (min-width: 760px) {
+        body {
+          padding: 20px;
+        }
+
+        main {
+          gap: 14px;
+        }
+
+        .panels {
+          grid-template-columns: minmax(0, 1fr) minmax(260px, 0.7fr);
+        }
+      }
+
+      @media (max-width: 620px) {
+        .topbar {
+          grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .play-controls {
+          justify-content: flex-start;
+          margin-inline: -2px;
+          padding-bottom: 2px;
+        }
+
+        .move-nav {
+          justify-content: flex-start;
+          margin-inline: -2px;
+          padding-bottom: 2px;
+        }
+
+        .subtitle {
+          display: none;
+        }
+
+        .game-info,
+        .captures {
+          grid-template-columns: 1fr;
+        }
+
+        .danger-actions {
+          grid-template-columns: 1fr;
+        }
+
+        .panel-header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+
+      /* Mobile app shell */
+      :root {
+        color-scheme: dark;
+        background: #071019;
+        color: #f6f3ee;
+      }
+
+      body {
+        background:
+          radial-gradient(circle at 50% -10%, rgb(197 154 86 / 12%), transparent 18rem),
+          linear-gradient(180deg, #0b1219 0%, #050910 100%);
+        color: #f6f3ee;
+        padding: max(8px, env(safe-area-inset-top)) 8px calc(96px + env(safe-area-inset-bottom));
+      }
+
+      main {
+        width: min(100%, 430px);
+        min-height: calc(100svh - 18px);
+        display: flex;
+        flex-direction: column;
+        padding: 10px 10px 16px;
+        border: 1px solid rgb(130 150 170 / 18%);
+        border-radius: 22px;
+        background:
+          linear-gradient(180deg, rgb(14 24 34 / 96%) 0%, rgb(5 10 17 / 98%) 100%);
+        box-shadow: 0 18px 50px rgb(0 0 0 / 34%);
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding: 10px;
+        border: 1px solid rgb(255 255 255 / 7%);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgb(18 29 40 / 96%) 0%, rgb(12 21 31 / 88%) 100%);
+        backdrop-filter: blur(14px);
+      }
+
+      .header-actions {
+        justify-self: end;
+      }
+
+      h1 {
+        font-size: 1.15rem;
+        line-height: 1.18;
+        color: #fff;
+      }
+
+      .subtitle {
+        display: none;
+      }
+
+      .autosave-status {
+        color: rgb(235 230 221 / 54%);
+      }
+
+      .save-toast {
+        position: fixed;
+        left: 50%;
+        top: max(18px, env(safe-area-inset-top));
+        z-index: 30;
+        max-width: min(360px, calc(100vw - 32px));
+        padding: 10px 14px;
+        border: 1px solid rgb(236 196 126 / 34%);
+        border-radius: 999px;
+        background: rgb(28 32 27 / 92%);
+        color: #fffaf1;
+        font-size: 0.82rem;
+        font-weight: 820;
+        line-height: 1.25;
+        text-align: center;
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, -10px);
+        transition: opacity 180ms ease, transform 180ms ease;
+        box-shadow: 0 16px 42px rgb(0 0 0 / 22%);
+      }
+
+      .save-toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      .play-controls {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 8px;
+        padding: 2px 0 4px;
+      }
+
+      button {
+        min-height: 38px;
+        border-color: rgb(206 190 156 / 18%);
+        background: rgb(255 255 255 / 5%);
+        color: #f8f5ef;
+        box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+      }
+
+      button[aria-pressed="true"] {
+        background: rgb(209 166 94 / 18%);
+        border-color: rgb(226 190 128 / 46%);
+        color: #fff;
+      }
+
+      .primary-action {
+        background: rgb(236 196 126 / 14%);
+        border-color: rgb(236 196 126 / 36%);
+      }
+
+      .secondary-action {
+        background: rgb(255 255 255 / 4%);
+      }
+
+      .future-action {
+        color: rgb(246 243 238 / 48%);
+      }
+
+      button:disabled {
+        color: rgb(230 225 216 / 36%);
+        background: rgb(255 255 255 / 4%);
+        border-color: rgb(255 255 255 / 8%);
+      }
+
+      input,
+      select,
+      textarea {
+        border-color: rgb(255 255 255 / 8%);
+        background: rgb(255 255 255 / 6%);
+        color: #f7f2e9;
+      }
+
+      label {
+        color: rgb(235 230 221 / 72%);
+      }
+
+      .board-zone {
+        gap: 7px;
+        padding: 6px 0 0;
+      }
+
+      goban-board {
+        width: min(100%, calc(100svw - 28px), 406px, 59svh);
+        max-width: none;
+      }
+
+      goban-board::part(canvas) {
+        border-radius: 6px;
+        box-shadow: 0 16px 34px rgb(0 0 0 / 35%);
+      }
+
+      .move-nav {
+        width: 100%;
+        overflow: visible;
+        gap: 6px;
+        padding: 8px 8px 9px;
+        border: 1px solid rgb(255 255 255 / 7%);
+        border-radius: 14px;
+        background: rgb(255 255 255 / 3.2%);
+      }
+
+      .move-nav button {
+        min-width: 36px;
+        height: 36px;
+        min-height: 36px;
+        padding: 0 9px;
+      }
+
+      .stone-lock {
+        min-width: 40px;
+        width: 40px;
+      }
+
+      .stone-lock::before {
+        width: 26px;
+        height: 26px;
+      }
+
+      .move-counter {
+        min-width: 62px;
+        align-self: center;
+        color: rgb(246 243 238 / 70%);
+        font-size: 0.84rem;
+      }
+
+      .captures {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .capture-box,
+      .panel {
+        border-color: rgb(255 255 255 / 8%);
+        background: linear-gradient(180deg, rgb(255 255 255 / 5.6%) 0%, rgb(255 255 255 / 3%) 100%);
+        box-shadow: none;
+      }
+
+      .capture-box {
+        min-height: 66px;
+        grid-template-columns: 64px minmax(24px, auto);
+        gap: 10px;
+      }
+
+      .goke {
+        width: 64px;
+        height: 50px;
+      }
+
+      .goke-count {
+        color: #fff;
+        font-size: 1.1rem;
+      }
+
+      .panels {
+        gap: 8px;
+      }
+
+      .panel {
+        padding: 12px;
+      }
+
+      .panel-title {
+        color: #fff;
+        font-size: 0.96rem;
+      }
+
+      .panel-note,
+      .variation-label {
+        color: rgb(235 230 221 / 58%);
+      }
+
+      .game-info {
+        grid-template-columns: 1fr;
+      }
+
+      .field-grid.two {
+        grid-template-columns: 1fr;
+      }
+
+      .field-note {
+        color: rgb(235 230 221 / 56%);
+      }
+
+      .section-kicker {
+        color: rgb(235 230 221 / 52%);
+      }
+
+      .file-controls {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        overflow: visible;
+      }
+
+      .file-controls button {
+        width: 100%;
+      }
+
+      .file-action {
+        background: rgb(255 255 255 / 4.5%);
+        border-color: rgb(255 255 255 / 8%);
+      }
+
+      .file-action strong {
+        color: #fff;
+      }
+
+      .file-action span {
+        color: rgb(235 230 221 / 58%);
+      }
+
+      .file-action .action-mark {
+        color: rgb(241 209 154 / 62%);
+      }
+
+      .file-action:disabled {
+        background: rgb(255 255 255 / 2.4%);
+        opacity: 1;
+      }
+
+      .file-action:disabled strong,
+      .file-action:disabled span,
+      .file-action:disabled .action-mark {
+        color: rgb(235 230 221 / 34%);
+      }
+
+      .record-card {
+        border-color: rgb(255 255 255 / 8%);
+        background: rgb(255 255 255 / 4.2%);
+      }
+
+      .archive-section,
+      .archive-game-row,
+      .thumb-card {
+        border-color: rgb(255 255 255 / 8%);
+        background: rgb(255 255 255 / 4.2%);
+      }
+
+      .archive-section summary,
+      .archive-game-row strong,
+      .thumb-card strong {
+        color: #fff;
+      }
+
+      .archive-game-row span,
+      .thumb-card span {
+        color: rgb(235 230 221 / 58%);
+      }
+
+      .record-title {
+        color: #fff;
+      }
+
+      .record-meta {
+        color: rgb(235 230 221 / 58%);
+      }
+
+      .record-field span:first-child,
+      .collection-card span {
+        color: rgb(235 230 221 / 52%);
+      }
+
+      .record-field span:last-child,
+      .collection-card strong {
+        color: #fff;
+      }
+
+      .collection-card {
+        border-color: rgb(255 255 255 / 8%);
+        background: rgb(255 255 255 / 4.2%);
+      }
+
+      .summary-row {
+        border-bottom-color: rgb(255 255 255 / 8%);
+      }
+
+      .summary-row span:first-child {
+        color: rgb(235 230 221 / 52%);
+      }
+
+      .summary-row span:last-child {
+        color: #fff;
+      }
+
+      .chip {
+        border-color: rgb(255 255 255 / 10%);
+        color: rgb(235 230 221 / 64%);
+      }
+
+      .chip.private {
+        color: #e7c987;
+      }
+
+      .chip.public {
+        color: #94d18e;
+      }
+
+      .chip.unlisted {
+        color: #b9abd4;
+      }
+
+      @media (min-width: 760px) {
+        main {
+          width: min(100%, 430px);
+          gap: 10px;
+        }
+
+        .panels {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 390px) {
+        body {
+          padding-inline: 0;
+        }
+
+        main {
+          min-height: 100svh;
+          border-radius: 0;
+          border-inline: 0;
+        }
+
+        goban-board {
+          width: min(100%, calc(100svw - 24px), 52svh);
+        }
+      }
+
+      .move-counter {
+        min-height: 36px;
+        display: inline-grid;
+        place-items: center;
+      }
+
+      .capture-box {
+        justify-content: center;
+      }
+
+      .goke {
+        background:
+          radial-gradient(ellipse at 52% 34%, rgb(255 231 194 / 72%) 0 9%, transparent 30%),
+          radial-gradient(ellipse at 50% 47%, #d58b45 0 32%, #9a4f1f 61%, #54270f 100%);
+        box-shadow:
+          inset 0 2px 2px rgb(255 239 212 / 54%),
+          inset 0 -9px 14px rgb(45 18 7 / 54%),
+          0 11px 20px rgb(0 0 0 / 28%);
+      }
+
+      .goke::before {
+        inset: 8px 8px 9px;
+        background:
+          radial-gradient(ellipse at 55% 31%, rgb(255 235 206 / 42%) 0 10%, transparent 34%),
+          radial-gradient(ellipse at 50% 56%, #b66328 0 38%, #7b3515 68%, #351607 100%);
+      }
+
+      .prisoner-stones {
+        inset: 0;
+        z-index: 2;
+      }
+
+      .stone-dot {
+        width: 13px;
+        height: 13px;
+      }
+
+      body[data-active-view="board"] .app-view:not([data-view="board"]),
+      body[data-active-view="info"] .app-view:not([data-view="info"]),
+      body[data-active-view="summary"] .app-view:not([data-view="summary"]),
+      body[data-active-view="archive"] .app-view:not([data-view="archive"]),
+      body[data-active-view="public"] .app-view:not([data-view="public"]),
+      body[data-active-view="settings"] .app-view:not([data-view="settings"]),
+      body[data-active-view="board"] .tab-panel,
+      body[data-active-view="info"] .tab-panel:not([data-view="info"]),
+      body[data-active-view="summary"] .tab-panel:not([data-view="summary"]),
+      body[data-active-view="archive"] .tab-panel:not([data-view="archive"]),
+      body[data-active-view="public"] .tab-panel:not([data-view="public"]),
+      body[data-active-view="settings"] .tab-panel:not([data-view="settings"]) {
+        display: none;
+      }
+
+      body[data-active-view="info"] .panels,
+      body[data-active-view="summary"] .panels,
+      body[data-active-view="archive"] .panels,
+      body[data-active-view="public"] .panels,
+      body[data-active-view="settings"] .panels {
+        display: grid;
+      }
+
+      body[data-active-view="board"] .panels {
+        display: none;
+      }
+
+      body:not([data-active-view="board"]) .topbar {
+        display: none;
+      }
+
+      .bottom-tabs {
+        position: fixed;
+        left: 50%;
+        right: auto;
+        bottom: 0;
+        z-index: 6;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 2px;
+        width: min(calc(100% - 16px), 430px);
+        min-height: calc(78px + env(safe-area-inset-bottom));
+        padding: 10px 0 max(12px, env(safe-area-inset-bottom));
+        border-top: 1px solid rgb(255 255 255 / 8%);
+        background: linear-gradient(0deg, rgb(5 10 17 / 99%) 0%, rgb(5 10 17 / 82%) 100%);
+        backdrop-filter: blur(16px);
+        transform: translateX(-50%);
+      }
+
+      .bottom-tabs button {
+        position: relative;
+        min-width: 0;
+        height: 56px;
+        min-height: 56px;
+        display: grid;
+        align-items: end;
+        padding: 22px 6px 8px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: rgb(246 243 238 / 55%);
+        box-shadow: none;
+        font-size: 0.68rem;
+        font-weight: 760;
+      }
+
+      .bottom-tabs button[aria-pressed="true"] {
+        background: transparent;
+        color: #f1d19a;
+      }
+
+      .bottom-tabs button[aria-pressed="true"]::before {
+        content: "";
+        position: absolute;
+        top: 7px;
+        left: 50%;
+        width: 24px;
+        height: 2px;
+        border-radius: 999px;
+        background: #d8a75d;
+        transform: translateX(-50%);
+      }
+
+      .bottom-tabs span {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .variation-tree {
+        width: 100%;
+        height: 132px;
+        position: relative;
+        overflow: auto;
+        border: 1px solid rgb(255 255 255 / 8%);
+        border-radius: 16px;
+        background:
+          linear-gradient(180deg, rgb(255 255 255 / 6%) 0%, rgb(255 255 255 / 3%) 100%),
+          var(--goban-board, #a66e3c);
+      }
+
+      .variation-tree:empty {
+        display: none;
+      }
+
+      .variation-track {
+        position: relative;
+        min-width: 100%;
+        min-height: 132px;
+      }
+
+      .variation-lines {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .variation-lines line {
+        stroke: rgb(32 20 10 / 78%);
+        stroke-linecap: round;
+        stroke-width: 1.75;
+      }
+
+      .variation-node {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        min-width: 16px;
+        min-height: 16px;
+        max-width: 16px;
+        max-height: 16px;
+        aspect-ratio: 1;
+        display: grid;
+        place-items: center;
+        border: 0;
+        border-radius: 50%;
+        padding: 0;
+        color: #fff;
+        font-size: 0.48rem;
+        font-weight: 850;
+        line-height: 1;
+        flex: 0 0 16px;
+        transform: translate(-50%, -50%);
+        box-shadow:
+          inset 0 1px 2px rgb(255 255 255 / 20%),
+          inset 0 -4px 7px rgb(0 0 0 / 34%),
+          0 4px 8px rgb(0 0 0 / 30%);
+      }
+
+      .variation-node.black {
+        background: radial-gradient(circle at 35% 28%, #5b5b5b 0 13%, #111 52%, #020202 100%);
+        color: #fff;
+      }
+
+      .variation-node.white {
+        background: radial-gradient(circle at 35% 28%, #fff 0 18%, #f3ead8 68%, #c9bda9 100%);
+        border: 1px solid #b5ad9e;
+        color: #050505;
+      }
+
+      .variation-node.current {
+        outline: 2px solid #d71920;
+        outline-offset: 2px;
+      }
+
+      .variation-node.has-comment::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-bottom: 8px solid #d8d4ca;
+        filter: drop-shadow(0 1px 1px rgb(0 0 0 / 55%));
+        transform: translate(-50%, -58%);
+      }
+
+      .variation-node.white.has-comment::after {
+        border-bottom-color: #050505;
+      }
+
+      .comment-panel {
+        display: grid;
+        gap: 6px;
+        width: 100%;
+      }
+
+      .comment-panel textarea {
+        min-height: 74px;
+        resize: vertical;
+        border: 1px solid rgb(255 255 255 / 8%);
+        border-radius: 14px;
+        background: rgb(255 255 255 / 6%);
+        color: #f7f2e9;
+        font: inherit;
+        line-height: 1.35;
+        padding: 10px 12px;
+      }
+
+      body[data-mode="light"] {
+        background:
+          radial-gradient(circle at 50% -10%, rgb(197 154 86 / 22%), transparent 18rem),
+          linear-gradient(180deg, #f6f1e7 0%, #e8dece 100%);
+        color: #20251f;
+      }
+
+      body[data-mode="light"] main {
+        border-color: rgb(97 78 47 / 18%);
+        background: linear-gradient(180deg, rgb(255 250 241 / 94%) 0%, rgb(238 229 213 / 98%) 100%);
+        box-shadow: 0 18px 44px rgb(84 61 28 / 18%);
+      }
+
+      body[data-mode="light"] .topbar {
+        border-color: rgb(97 78 47 / 12%);
+        background: linear-gradient(180deg, rgb(255 253 248 / 92%) 0%, rgb(255 250 241 / 74%) 100%);
+        box-shadow: 0 8px 24px rgb(84 61 28 / 8%);
+      }
+
+      body[data-mode="light"] .autosave-status {
+        color: rgb(58 63 55 / 62%);
+      }
+
+      body[data-mode="light"] h1,
+      body[data-mode="light"] .panel-title,
+      body[data-mode="light"] .record-title,
+      body[data-mode="light"] .file-action strong {
+        color: #1d2521;
+      }
+
+      body[data-mode="light"] button {
+        border-color: rgb(118 95 60 / 24%);
+        background: rgb(255 255 255 / 58%);
+        color: #1d2521;
+      }
+
+      body[data-mode="light"] .icon-action {
+        border-color: rgb(118 95 60 / 14%);
+        background: rgb(255 255 255 / 72%);
+        box-shadow:
+          0 6px 15px rgb(84 61 28 / 10%),
+          inset 0 1px 0 rgb(255 255 255 / 94%);
+      }
+
+      body[data-mode="light"] .new-board-action {
+        border-color: rgb(216 167 93 / 78%);
+        color: #1d2521;
+      }
+
+      body[data-mode="light"] button[aria-pressed="true"] {
+        background: rgb(111 83 39 / 12%);
+        border-color: rgb(111 83 39 / 34%);
+      }
+
+      body[data-mode="light"] input,
+      body[data-mode="light"] select,
+      body[data-mode="light"] textarea {
+        border-color: rgb(118 95 60 / 22%);
+        background: rgb(255 253 248 / 84%);
+        color: #1d2521;
+      }
+
+      body[data-mode="light"] label,
+      body[data-mode="light"] .panel-note,
+      body[data-mode="light"] .field-note,
+      body[data-mode="light"] .section-kicker,
+      body[data-mode="light"] .record-meta,
+      body[data-mode="light"] .record-field span:first-child,
+      body[data-mode="light"] .collection-card span,
+      body[data-mode="light"] .file-action span {
+        color: rgb(58 63 55 / 68%);
+      }
+
+      body[data-mode="light"] .record-field span:last-child,
+      body[data-mode="light"] .collection-card strong,
+      body[data-mode="light"] .goke-count {
+        color: #1d2521;
+      }
+
+      body[data-mode="light"] .move-nav,
+      body[data-mode="light"] .capture-box,
+      body[data-mode="light"] .panel,
+      body[data-mode="light"] .record-card,
+      body[data-mode="light"] .archive-section,
+      body[data-mode="light"] .archive-game-row,
+      body[data-mode="light"] .thumb-card,
+      body[data-mode="light"] .collection-card,
+      body[data-mode="light"] .variation-tree {
+        border-color: rgb(97 78 47 / 15%);
+        background: rgb(255 250 241 / 56%);
+      }
+
+      body[data-mode="light"] .bottom-tabs {
+        border-top-color: rgb(55 41 20 / 12%);
+        background: linear-gradient(0deg, rgb(238 229 213 / 99%) 0%, rgb(238 229 213 / 82%) 100%);
+      }
+
+      body[data-mode="light"] .bottom-tabs button {
+        background: transparent;
+        color: rgb(32 37 31 / 58%);
+      }
+
+      body[data-mode="light"] .bottom-tabs button[aria-pressed="true"] {
+        color: #7b5420;
+      }
+
+      body[data-mode="light"] .comment-panel textarea {
+        border-color: rgb(97 78 47 / 16%);
+        background: rgb(255 250 241 / 60%);
+        color: #1d2521;
+      }
+
+      body[data-mode="light"] .archive-section,
+      body[data-mode="light"] .archive-folder,
+      body[data-mode="light"] .archive-game-row,
+      body[data-mode="light"] .thumb-card {
+        border-color: rgb(97 78 47 / 18%);
+        background: rgb(255 250 241 / 64%);
+      }
+
+      body[data-mode="light"] .archive-section summary,
+      body[data-mode="light"] .archive-folder summary,
+      body[data-mode="light"] .archive-game-row strong,
+      body[data-mode="light"] .thumb-card strong {
+        color: #1d2521;
+      }
+
+      body[data-mode="light"] .archive-game-row span,
+      body[data-mode="light"] .thumb-card span {
+        color: rgb(58 63 55 / 72%);
+      }
+
+      body[data-mode="light"] .archive-section summary::after,
+      body[data-mode="light"] .archive-game-row .action-mark {
+        color: rgb(58 63 55 / 64%);
+      }
+
+      body[data-mode="light"] .info-action {
+        border-color: rgb(97 78 47 / 16%);
+        background: rgb(255 253 248 / 58%);
+        color: rgb(58 63 55 / 62%);
+      }
+
+      body[data-mode="light"] .info-action:hover {
+        border-color: rgb(111 83 39 / 28%);
+        background: rgb(111 83 39 / 8%);
+        color: #4f3b1c;
+      }
+
+      body[data-mode="light"] .summary-row {
+        border-bottom-color: rgb(97 78 47 / 16%);
+      }
+
+      body[data-mode="light"] .summary-row span:first-child {
+        color: rgb(58 63 55 / 70%);
+      }
+
+      body[data-mode="light"] .summary-row span:last-child {
+        color: #1d2521;
+      }
+
+      body[data-mode="light"] .delete-action {
+        border-color: rgb(151 63 45 / 24%);
+        background: rgb(151 63 45 / 7%);
+        color: #8f3d31;
+      }
+
+      body[data-mode="light"] .chip {
+        border-color: rgb(97 78 47 / 20%);
+        background: rgb(255 253 248 / 58%);
+        color: rgb(58 63 55 / 78%);
+      }
+
+      body[data-mode="light"] .chip.public {
+        border-color: rgb(78 146 88 / 26%);
+        background: rgb(116 205 130 / 12%);
+        color: #4b9d5a;
+      }
+
+      body[data-mode="light"] .chip.private {
+        color: #765d2e;
+      }
+
+      body[data-mode="light"] .chip.unlisted {
+        color: #625a73;
+      }
+
+      body:not([data-mode="light"]) .archive-folder {
+        border-color: rgb(255 255 255 / 8%);
+        background: rgb(255 255 255 / 3.2%);
+      }
+
+      .identity-card label,
+      .identity-card .field-note {
+        color: rgb(58 63 55 / 72%);
+      }
+
+      .identity-card input {
+        border-color: rgb(56 44 27 / 34%);
+        background: #fffdf8;
+        color: #1d2521;
+      }
+
+      .identity-card input::placeholder {
+        color: rgb(58 63 55 / 42%);
+      }
+
+      .identity-card button {
+        border-color: rgb(128 91 36 / 18%);
+        background: #fffdf8;
+        color: #1d2521;
+      }
+
+      .identity-card .secondary-action {
+        background: rgb(255 253 248 / 88%);
+        color: rgb(58 63 55 / 82%);
+      }
+
+      .identity-card .primary-action {
+        border-color: rgb(172 118 42 / 30%);
+        background: rgb(236 196 126 / 28%);
+        color: #3a2a12;
+      }
+
+      .identity-card button:disabled {
+        border-color: rgb(128 91 36 / 14%);
+        background: rgb(255 253 248 / 54%);
+        color: rgb(58 63 55 / 46%);
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="save-toast" id="saveToast" role="status" aria-live="polite"></div>
+    <main>
+      <header class="topbar">
+        <div class="brand">
+          <h1>Goban</h1>
+          <p class="subtitle" data-i18n="app.subtitle">SGF review and study board</p>
+          <p class="autosave-status" id="autosaveStatus">Draft autosaves locally</p>
+        </div>
+        <div class="header-actions" aria-label="Editor actions">
+          <button type="button" class="icon-action new-board-action" id="newBoardButton" title="New board" aria-label="New board">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="4" y="4" width="16" height="16" rx="1.5"></rect>
+              <path d="M9.33 4v16"></path>
+              <path d="M14.67 4v16"></path>
+              <path d="M4 9.33h16"></path>
+              <path d="M4 14.67h16"></path>
+            </svg>
+            <span>New</span>
+          </button>
+          <button type="button" class="icon-action" data-open title="Upload SGF" aria-label="Upload SGF">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v12"></path>
+              <path d="m7 8 5-5 5 5"></path>
+              <path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"></path>
+            </svg>
+          </button>
+          <button type="button" class="icon-action" data-save-record title="Save record" aria-label="Save record">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 3h12l2 2v16H5z"></path>
+              <path d="M8 3v6h8V3"></path>
+              <path d="M8 15h8v6H8z"></path>
+            </svg>
+          </button>
+          <button type="button" class="icon-action" data-info-record title="Game info" aria-label="Game info">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M12 11v5"></path>
+              <path d="M12 8h.01"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="board-zone app-view" data-view="board" aria-label="Board">
+        <div class="public-share-panel" id="publicSharePanel" aria-live="polite">
+          <div>
+            <p class="public-share-title" id="publicShareTitle">Read-only public SGF</p>
+            <p class="public-share-meta" id="publicShareMeta">Shared public game record</p>
+          </div>
+          <div class="public-share-actions">
+            <button type="button" class="secondary-action" id="publicDownloadButton">Download SGF</button>
+            <button type="button" class="secondary-action" id="publicCopyLinkButton">Copy link</button>
+          </div>
+        </div>
+        <goban-board id="board" size="19"></goban-board>
+        <nav class="move-nav" aria-label="Move navigation">
+          <button type="button" data-nav="start" title="First move">|&lt;</button>
+          <button type="button" data-nav="-20" title="Back 20 moves">&lt;&lt;</button>
+          <button type="button" data-nav="-1" title="Previous move">&lt;</button>
+          <button type="button" data-play title="Autoplay" aria-label="Play"></button>
+          <button type="button" data-nav="1" title="Next move">&gt;</button>
+          <button type="button" data-nav="20" title="Forward 20 moves">&gt;&gt;</button>
+          <button type="button" data-nav="end" title="Last move">&gt;|</button>
+          <span class="move-counter" id="moveCounter">0 / 0</span>
+          <button type="button" class="stone-lock" data-lock-color="black" aria-pressed="false" aria-label="Lock placement to Black"></button>
+          <button type="button" class="stone-lock" data-lock-color="white" aria-pressed="false" aria-label="Lock placement to White"></button>
+          <button type="button" data-pass title="Pass">Pass</button>
+        </nav>
+      </section>
+
+      <section class="game-strip app-view" data-view="board" aria-label="Game state">
+        <div class="captures" aria-label="Captures">
+          <div class="capture-box">
+            <div class="goke"><div class="prisoner-stones" id="blackPrisoners" aria-label="Black captures 0"></div></div>
+            <span class="goke-count" id="blackCaptures">0</span>
+          </div>
+          <div class="capture-box">
+            <div class="goke"><div class="prisoner-stones" id="whitePrisoners" aria-label="White captures 0"></div></div>
+            <span class="goke-count" id="whiteCaptures">0</span>
+          </div>
+        </div>
+        <div class="variation-tree" id="variationTree" aria-label="Variation tree"></div>
+        <label class="comment-panel">
+          Move comment
+          <textarea id="commentEditor" placeholder="Add a note to the current move"></textarea>
+        </label>
+      </section>
+
+      <section class="panels" aria-label="Game info and files">
+        <article class="panel tab-panel" data-view="info">
+          <div class="panel-header">
+            <h2 class="panel-title" data-i18n="view.info">Game Identity</h2>
+            <span class="panel-note" data-i18n="info.savedToSgf">SGF metadata</span>
+          </div>
+          <div class="identity-form">
+            <div class="file-controls">
+              <button type="button" class="primary-action" id="saveRecordToArchiveButton">Save to My Archive</button>
+              <button type="button" class="primary-action" id="saveAsButton">Save as SGF</button>
+              <button type="button" class="secondary-action" id="overwriteButton">Overwrite SGF</button>
+            </div>
+            <div class="field-grid">
+              <label class="wide">
+                Game name
+                <input id="gameName" autocomplete="off" placeholder="Teaching game, league match, review..." />
+              </label>
+            </div>
+
+            <p class="section-kicker">Players</p>
+            <div class="field-grid two">
+              <label>
+                Black
+                <input id="blackName" autocomplete="off" placeholder="Black player" />
+              </label>
+              <label>
+                White
+                <input id="whiteName" autocomplete="off" placeholder="White player" />
+              </label>
+            </div>
+
+            <p class="section-kicker">Event</p>
+            <div class="field-grid two">
+              <label>
+                Event / Tournament
+                <input id="eventName" autocomplete="off" placeholder="Tournament, club league..." />
+              </label>
+              <label>
+                Round
+                <input id="roundName" autocomplete="off" placeholder="Round 3" />
+              </label>
+              <label class="wide">
+                Result
+                <div class="result-combo" id="resultCombo" data-result-state="single">
+                  <select id="resultWinner">
+                    <option value="">Unknown</option>
+                    <option value="black">Black won</option>
+                    <option value="white">White won</option>
+                    <option value="jigo">Jigo</option>
+                  </select>
+                  <span id="resultByText">by</span>
+                  <div class="result-detail-picker" id="resultDetailPicker">
+                    <select id="resultMethod" aria-label="Result method">
+                      <option value="points">Points</option>
+                      <option value="R">Resignation</option>
+                      <option value="T">Time</option>
+                      <option value="F">Forfeit</option>
+                    </select>
+                    <input
+                      id="resultDetail"
+                      type="text"
+                      autocomplete="off"
+                      inputmode="decimal"
+                      placeholder="0.5"
+                      aria-label="Point margin"
+                    />
+                    <button type="button" class="result-detail-toggle" id="resultDetailToggle" aria-label="Choose result detail">▼</button>
+                    <div class="result-detail-menu" id="resultDetailMenu" hidden>
+                      <button type="button" data-result-detail="0.5">0.5</button>
+                      <button type="button" data-result-detail="Resignation">Resignation</button>
+                      <button type="button" data-result-detail="Time">Time</button>
+                      <button type="button" data-result-detail="Forfeit">Forfeit</button>
+                    </div>
+                  </div>
+                </div>
+              </label>
+              <label>
+                Komi
+                <input id="komiValue" autocomplete="off" placeholder="6.5" />
+              </label>
+              <label>
+                Rules
+                <select id="rulesSelect">
+                  <option value="Japanese">Japanese</option>
+                  <option value="Chinese">Chinese</option>
+                  <option value="Korean">Korean</option>
+                  <option value="AGA">AGA</option>
+                </select>
+              </label>
+              <label>
+                Date
+                <input id="gameDate" type="date" />
+              </label>
+              <label class="wide">
+                Recorder nickname
+                <input id="recorderNickname" autocomplete="off" placeholder="Optional, not an account" />
+              </label>
+            </div>
+            <input id="gameTags" type="hidden" />
+            <input id="gameNotes" type="hidden" />
+            <select id="visibilitySelect" hidden>
+              <option value="private">Private</option>
+              <option value="unlisted">Unlisted</option>
+              <option value="public">Public</option>
+            </select>
+            <select id="opponentVisibilitySelect" hidden>
+              <option value="show">Show opponent</option>
+              <option value="hide">Hide opponent</option>
+            </select>
+            <select id="recorderColorSelect" hidden>
+              <option value="">Recorder only</option>
+              <option value="black">I played Black</option>
+              <option value="white">I played White</option>
+            </select>
+          </div>
+        </article>
+
+        <article class="panel tab-panel" data-view="summary">
+          <div class="panel-header">
+            <h2 class="panel-title">Game Info</h2>
+            <span class="panel-note">Read-only</span>
+          </div>
+          <div class="identity-form">
+            <div class="chip-row" id="summaryChips"></div>
+            <div class="summary-list" id="summaryList" aria-label="Game info details"></div>
+          </div>
+        </article>
+
+        <article class="panel tab-panel" data-view="archive">
+          <div class="panel-header">
+            <h2 class="panel-title" data-i18n="view.archive">My Archive</h2>
+            <span class="panel-note" data-i18n="archive.privateDefault">Private by default</span>
+          </div>
+          <div class="file-stack" aria-label="SGF and game tools">
+            <button type="button" class="file-action primary-action" data-open>
+              <span><strong data-i18n="file.open">Open SGF</strong><span>Import a local game record</span></span>
+              <span class="action-mark">+</span>
+            </button>
+            <button type="button" class="file-action secondary-action" data-save-sgf>
+              <span><strong data-i18n="file.save">Save SGF</strong><span>Download the current game tree</span></span>
+              <span class="action-mark">SGF</span>
+            </button>
+            <button type="button" class="file-action secondary-action" id="publishArchiveButton">
+              <span><strong>Publish to Public Archive</strong><span>Creates an owned public SGF record</span></span>
+              <span class="action-mark">PUB</span>
+            </button>
+            <p class="field-note">Publishing uses Google sign-in so your public records stay manageable across devices. Your email is never shown publicly.</p>
+          </div>
+          <div class="archive-toolbar">
+            <p class="section-kicker">Local archive preview</p>
+            <button type="button" class="view-toggle" id="archiveViewToggle" aria-pressed="false" title="Toggle thumbnail view" aria-label="Toggle thumbnail view">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <rect x="4" y="4" width="6" height="6" rx="1"></rect>
+                <rect x="14" y="4" width="6" height="6" rx="1"></rect>
+                <rect x="4" y="14" width="6" height="6" rx="1"></rect>
+                <rect x="14" y="14" width="6" height="6" rx="1"></rect>
+              </svg>
+            </button>
+          </div>
+          <p class="field-note">Games with Event / Tournament are filed under Tournament Games. Leave it blank for Other Games.</p>
+          <div class="archive-list" id="myArchiveList" aria-label="My archive games"></div>
+        </article>
+
+        <article class="panel tab-panel" data-view="public">
+          <div class="panel-header">
+            <h2 class="panel-title" data-i18n="view.publicArchive">Public Archive</h2>
+            <span class="panel-note">Public SGF library</span>
+          </div>
+          <div class="archive-browser">
+            <p class="section-kicker">Browse Collections</p>
+            <div class="archive-collection-grid" id="publicCollections" aria-label="Public archive collections"></div>
+            <div class="filter-row">
+              <label>
+                Search records
+                <input id="publicSearch" autocomplete="off" placeholder="Player, event, result, komi..." />
+              </label>
+            </div>
+            <p class="section-kicker">Public Game Records</p>
+            <div class="archive-list" id="publicArchiveList" aria-label="Public archive games"></div>
+          </div>
+        </article>
+
+        <article class="panel tab-panel" data-view="settings">
+          <div class="panel-header">
+            <h2 class="panel-title" data-i18n="view.settings">Settings</h2>
+            <span class="panel-note">Board and stones</span>
+          </div>
+          <div class="settings-form">
+            <label>
+              App mode
+              <select id="modeSelect">
+                <option value="light">Light mode</option>
+                <option value="dark">Night mode</option>
+              </select>
+            </label>
+            <label>
+              Board theme
+              <select id="themeSelect">
+                <option value="classic">Classic</option>
+                <option value="walnut">Walnut</option>
+                <option value="bamboo">Bamboo</option>
+              </select>
+            </label>
+            <label>
+              Stone appearance
+              <select id="stoneStyleSelect">
+                <option value="classic">Classic glass</option>
+                <option value="shell">Shell and slate</option>
+                <option value="flat">Flat print</option>
+              </select>
+            </label>
+            <label>
+              Coordinates
+              <select id="coordinatesSelect">
+                <option value="on">Show coordinates</option>
+                <option value="off">Hide coordinates</option>
+              </select>
+            </label>
+            <label>
+              Move target marker
+              <select id="targetMarkerSelect">
+                <option value="on">Show red target</option>
+                <option value="off">Hide red target</option>
+              </select>
+            </label>
+            <div class="danger-zone">
+              <p class="section-kicker">Local archive cleanup</p>
+              <p class="field-note">Public records are managed with Google sign-in. Local archive cleanup stays on this device.</p>
+              <div class="danger-actions">
+                <button type="button" class="delete-action" id="deleteTournamentArchiveButton">Delete Tournament Games</button>
+                <button type="button" class="delete-action" id="deleteOtherArchiveButton">Delete Other Games</button>
+                <button type="button" class="delete-action" id="deleteAllArchiveButton">Delete My Archive</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <nav class="bottom-tabs" aria-label="Primary navigation">
+        <button type="button" data-tab="board" aria-pressed="true"><span>Board</span></button>
+        <button type="button" data-tab="archive" aria-pressed="false"><span>Archive</span></button>
+        <button type="button" data-tab="public" aria-pressed="false"><span>Public</span></button>
+        <button type="button" data-tab="settings" aria-pressed="false"><span>Settings</span></button>
+      </nav>
+
+    </main>
+
+    <input id="sgfFile" type="file" accept=".sgf,application/x-go-sgf,text/plain" hidden />
+
+    <dialog class="identity-dialog" id="signInDialog">
+      <form method="dialog" class="identity-card">
+        <h2>Sign in to publish</h2>
+        <p>Use Google to manage your public records across devices. You can still use KifuArchive locally without signing in. Your email will not be shown publicly.</p>
+        <label>
+          Public archive name
+          <span class="handle-field">
+            <span class="handle-prefix">@</span>
+            <input id="publicHandleInput" autocomplete="nickname" placeholder="archive-name" />
+          </span>
+        </label>
+        <div class="identity-actions">
+          <button type="button" class="secondary-action" id="cancelSignInButton">Cancel</button>
+          <button type="button" class="primary-action" id="googleSignInButton">Continue with Google</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="identity-dialog" id="opponentPrivacyDialog">
+      <form method="dialog" class="identity-card">
+        <h2>Hide opponent identity?</h2>
+        <p>Choose your color for the public copy. The opponent name will be hidden, and the original local SGF stays unchanged.</p>
+        <div class="choice-actions">
+          <button type="button" class="secondary-action" id="hideAsBlackButton">Black</button>
+          <button type="button" class="secondary-action" id="hideAsWhiteButton">White</button>
+        </div>
+        <div class="identity-actions">
+          <button type="button" class="secondary-action" id="showOpponentButton">Show opponent</button>
+          <button type="button" class="primary-action" id="cancelPrivacyButton">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module">
+      const board = document.querySelector("#board");
+      const status = document.querySelector("#autosaveStatus");
+      const saveToast = document.querySelector("#saveToast");
+      const blackCaptures = document.querySelector("#blackCaptures");
+      const whiteCaptures = document.querySelector("#whiteCaptures");
+      const blackPrisoners = document.querySelector("#blackPrisoners");
+      const whitePrisoners = document.querySelector("#whitePrisoners");
+      const navButtons = document.querySelectorAll("[data-nav]");
+      const playButton = document.querySelector("[data-play]");
+      const passButton = document.querySelector("[data-pass]");
+      const moveCounter = document.querySelector("#moveCounter");
+      const newBoardButton = document.querySelector("#newBoardButton");
+      const openButtons = document.querySelectorAll("[data-open]");
+      const saveSgfButton = document.querySelector("[data-save-sgf]");
+      const saveRecordButton = document.querySelector("[data-save-record]");
+      const infoRecordButton = document.querySelector("[data-info-record]");
+      const publishArchiveButton = document.querySelector("#publishArchiveButton");
+      const saveRecordToArchiveButton = document.querySelector("#saveRecordToArchiveButton");
+      const saveAsButton = document.querySelector("#saveAsButton");
+      const overwriteButton = document.querySelector("#overwriteButton");
+      const myArchiveList = document.querySelector("#myArchiveList");
+      const archiveViewToggle = document.querySelector("#archiveViewToggle");
+      const publicArchiveList = document.querySelector("#publicArchiveList");
+      const publicCollections = document.querySelector("#publicCollections");
+      const publicSearch = document.querySelector("#publicSearch");
+      const publicShareTitle = document.querySelector("#publicShareTitle");
+      const publicShareMeta = document.querySelector("#publicShareMeta");
+      const publicDownloadButton = document.querySelector("#publicDownloadButton");
+      const publicCopyLinkButton = document.querySelector("#publicCopyLinkButton");
+      const variationTree = document.querySelector("#variationTree");
+      const commentEditor = document.querySelector("#commentEditor");
+      const summaryChips = document.querySelector("#summaryChips");
+      const summaryList = document.querySelector("#summaryList");
+      const sgfFile = document.querySelector("#sgfFile");
+      const gameName = document.querySelector("#gameName");
+      const blackName = document.querySelector("#blackName");
+      const whiteName = document.querySelector("#whiteName");
+      const eventName = document.querySelector("#eventName");
+      const roundName = document.querySelector("#roundName");
+      const resultWinner = document.querySelector("#resultWinner");
+      const resultMethod = document.querySelector("#resultMethod");
+      const resultCombo = document.querySelector("#resultCombo");
+      const resultDetail = document.querySelector("#resultDetail");
+      const resultDetailPicker = document.querySelector("#resultDetailPicker");
+      const resultDetailToggle = document.querySelector("#resultDetailToggle");
+      const resultDetailMenu = document.querySelector("#resultDetailMenu");
+      const resultByText = document.querySelector("#resultByText");
+      const komiValue = document.querySelector("#komiValue");
+      const rulesSelect = document.querySelector("#rulesSelect");
+      const gameDate = document.querySelector("#gameDate");
+      const recorderNickname = document.querySelector("#recorderNickname");
+      const gameTags = document.querySelector("#gameTags");
+      const gameNotes = document.querySelector("#gameNotes");
+      const visibilitySelect = document.querySelector("#visibilitySelect");
+      const opponentVisibilitySelect = document.querySelector("#opponentVisibilitySelect");
+      const recorderColorSelect = document.querySelector("#recorderColorSelect");
+      const modeSelect = document.querySelector("#modeSelect");
+      const themeSelect = document.querySelector("#themeSelect");
+      const stoneStyleSelect = document.querySelector("#stoneStyleSelect");
+      const coordinatesSelect = document.querySelector("#coordinatesSelect");
+      const targetMarkerSelect = document.querySelector("#targetMarkerSelect");
+      const deleteTournamentArchiveButton = document.querySelector("#deleteTournamentArchiveButton");
+      const deleteOtherArchiveButton = document.querySelector("#deleteOtherArchiveButton");
+      const deleteAllArchiveButton = document.querySelector("#deleteAllArchiveButton");
+      const signInDialog = document.querySelector("#signInDialog");
+      const publicHandleInput = document.querySelector("#publicHandleInput");
+      const cancelSignInButton = document.querySelector("#cancelSignInButton");
+      const googleSignInButton = document.querySelector("#googleSignInButton");
+      const opponentPrivacyDialog = document.querySelector("#opponentPrivacyDialog");
+      const hideAsBlackButton = document.querySelector("#hideAsBlackButton");
+      const hideAsWhiteButton = document.querySelector("#hideAsWhiteButton");
+      const showOpponentButton = document.querySelector("#showOpponentButton");
+      const cancelPrivacyButton = document.querySelector("#cancelPrivacyButton");
+      const colorButtons = document.querySelectorAll("[data-color]");
+      const lockButtons = document.querySelectorAll("[data-lock-color]");
+      const tabButtons = document.querySelectorAll("[data-tab]");
+      const STORAGE_KEY = "goban-app-state-v1";
+      const PUBLIC_OWNER_TOKENS_KEY = "goban-public-owner-tokens-v1";
+      const PUBLIC_SIGNATURES_KEY = "goban-public-signatures-v1";
+      const PUBLIC_AUTH_SESSION_KEY = "kifu-public-auth-session-v1";
+      const PUBLIC_HANDLE_KEY = "kifu-public-handle-v1";
+      const LOCAL_ARCHIVE_KEY = "goban-local-archive-records-v1";
+      const LOCAL_ARCHIVE_DELETED_KEY = "goban-local-archive-deleted-v1";
+      let autoplayTimer = null;
+      let isRestoring = false;
+      let lastPassPointerAt = 0;
+      let toastTimer = null;
+      let setupColorLock = null;
+      let loadedFileName = "";
+      let loadedFileHandle = null;
+      let hasUnsavedExportChanges = false;
+      let archiveViewMode = "list";
+      let publicServerGames = [];
+      let publicReadOnly = false;
+      let activePublicGame = null;
+      let activeLocalArchiveId = null;
+      let hasUnsavedArchiveChanges = false;
+      let authConfig = null;
+      let authSession = null;
+      let authUser = null;
+      let pendingPublishRecord = null;
+      let privacyChoiceResolver = null;
+
+      const I18N = {
+        en: {
+          "app.subtitle": "SGF review and study board",
+          "color.black": "Black",
+          "color.white": "White",
+          "control.play": "Play",
+          "control.pause": "Pause",
+          "view.info": "Game Identity",
+          "view.archive": "My Archive",
+          "view.publicArchive": "Public Archive",
+          "view.settings": "Settings",
+          "info.savedToSgf": "SGF metadata",
+          "archive.privateDefault": "Private by default",
+          "file.open": "Open SGF",
+          "file.save": "Save SGF",
+        },
+      };
+      const locale = "en";
+      const t = (key) => I18N[locale][key] ?? key;
+
+      function getOwnerTokens() {
+        try {
+          return JSON.parse(safeGetLocalStorage(PUBLIC_OWNER_TOKENS_KEY, "{}") || "{}");
+        } catch {
+          return {};
+        }
+      }
+
+      function safeSetLocalStorage(key, value, message = "Local autosave failed. Please export your SGF.") {
+        try {
+          localStorage.setItem(key, value);
+          return true;
+        } catch {
+          status.textContent = message;
+          showSaveToast(message);
+          return false;
+        }
+      }
+
+      function safeGetLocalStorage(key, fallback = "") {
+        try {
+          return localStorage.getItem(key) ?? fallback;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function saveOwnerToken(publicId, ownerToken) {
+        const tokens = getOwnerTokens();
+        tokens[publicId] = ownerToken;
+        safeSetLocalStorage(PUBLIC_OWNER_TOKENS_KEY, JSON.stringify(tokens), "Could not save unpublish permission on this device.");
+      }
+
+      function removeOwnerToken(publicId) {
+        const tokens = getOwnerTokens();
+        delete tokens[publicId];
+        safeSetLocalStorage(PUBLIC_OWNER_TOKENS_KEY, JSON.stringify(tokens), "Could not update unpublish permission on this device.");
+      }
+
+      function getPublishedSignatures() {
+        try {
+          return JSON.parse(safeGetLocalStorage(PUBLIC_SIGNATURES_KEY, "{}") || "{}");
+        } catch {
+          return {};
+        }
+      }
+
+      function savePublishedSignature(signature, publicId) {
+        const signatures = getPublishedSignatures();
+        signatures[signature] = publicId;
+        safeSetLocalStorage(PUBLIC_SIGNATURES_KEY, JSON.stringify(signatures), "Could not save publish history on this device.");
+      }
+
+      function removePublishedSignatureByPublicId(publicId) {
+        const signatures = getPublishedSignatures();
+        Object.entries(signatures).forEach(([signature, id]) => {
+          if (id === publicId) delete signatures[signature];
+        });
+        safeSetLocalStorage(PUBLIC_SIGNATURES_KEY, JSON.stringify(signatures), "Could not update publish history on this device.");
+      }
+
+      function getPublicHandle() {
+        const raw = safeGetLocalStorage(PUBLIC_HANDLE_KEY, "");
+        const clean = String(raw || "").trim().replace(/^@+/, "").replace(/[^\w.-]/g, "").slice(0, 32);
+        return clean ? `@${clean}` : "";
+      }
+
+      function savePublicHandle(value) {
+        const clean = String(value || "").trim().replace(/^@+/, "").replace(/[^\w.-]/g, "").slice(0, 32);
+        const handle = clean ? `@${clean}` : "";
+        if (handle) safeSetLocalStorage(PUBLIC_HANDLE_KEY, handle, "Could not save public archive name.");
+        return handle;
+      }
+
+      function publicHandleName(handle = "") {
+        return String(handle || "").trim().replace(/^@+/, "");
+      }
+
+      function getAuthSession() {
+        try {
+          const session = JSON.parse(safeGetLocalStorage(PUBLIC_AUTH_SESSION_KEY, "{}") || "{}");
+          if (!session.accessToken || Number(session.expiresAt || 0) <= Math.floor(Date.now() / 1000)) return null;
+          return session;
+        } catch {
+          return null;
+        }
+      }
+
+      function saveAuthSession(session) {
+        authSession = session;
+        safeSetLocalStorage(PUBLIC_AUTH_SESSION_KEY, JSON.stringify(session), "Could not save sign-in session.");
+      }
+
+      function clearAuthSession() {
+        authSession = null;
+        authUser = null;
+        safeSetLocalStorage(PUBLIC_AUTH_SESSION_KEY, "{}", "Could not clear sign-in session.");
+      }
+
+      function authHeaders() {
+        return authSession?.accessToken ? { authorization: `Bearer ${authSession.accessToken}` } : {};
+      }
+
+      async function loadAuthConfig() {
+        if (authConfig) return authConfig;
+        const response = await fetch("/api/archive/auth-config", { headers: { accept: "application/json" } });
+        authConfig = await response.json().catch(() => ({ configured: false }));
+        return authConfig;
+      }
+
+      async function loadAuthUser() {
+        authSession = getAuthSession();
+        if (!authSession) return null;
+        const response = await fetch("/api/archive/me", { headers: { accept: "application/json", ...authHeaders() } });
+        if (!response.ok) {
+          clearAuthSession();
+          return null;
+        }
+        const payload = await response.json().catch(() => ({}));
+        authUser = payload.user || null;
+        return authUser;
+      }
+
+      function consumeAuthCallback() {
+        const params = new URLSearchParams(location.hash.startsWith("#") ? location.hash.slice(1) : "");
+        const accessToken = params.get("access_token");
+        if (!accessToken) return;
+        const expiresIn = Number(params.get("expires_in") || 3600);
+        saveAuthSession({
+          accessToken,
+          refreshToken: params.get("refresh_token") || "",
+          expiresAt: Math.floor(Date.now() / 1000) + Math.max(60, expiresIn - 60),
+        });
+        history.replaceState(null, "", `${location.pathname}${location.search}`);
+      }
+
+      function showSignInDialog(record = null) {
+        pendingPublishRecord = record;
+        publicHandleInput.value = publicHandleName(getPublicHandle() || recorderNickname.value.trim());
+        if (signInDialog?.showModal) signInDialog.showModal();
+      }
+
+      async function startGoogleSignIn() {
+        const handle = savePublicHandle(publicHandleInput.value);
+        if (!handle) {
+          status.textContent = "Choose a public archive name before signing in.";
+          return;
+        }
+        if (authSession || authUser) {
+          signInDialog.close();
+          const record = pendingPublishRecord;
+          pendingPublishRecord = null;
+          if (record) publishArchiveGame(record).catch(() => {
+            status.textContent = "Could not publish SGF record.";
+          });
+          return;
+        }
+        const config = await loadAuthConfig();
+        if (!config.configured || !config.supabaseUrl) {
+          status.textContent = "Google sign-in is not configured yet.";
+          return;
+        }
+        const redirectTo = encodeURIComponent(location.href.split("#")[0]);
+        location.href = `${config.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
+      }
+
+      async function ensurePublicAuth(record = null) {
+        const user = await loadAuthUser();
+        if (user) {
+          if (!getPublicHandle()) showSignInDialog(record);
+          return Boolean(getPublicHandle());
+        }
+        showSignInDialog(record);
+        return false;
+      }
+
+      function publicGameSignature(game) {
+        const normalized = String(game?.sgf || "")
+          .replace(/\s+/g, "")
+          .trim();
+        let hash = 2166136261;
+        for (let i = 0; i < normalized.length; i += 1) {
+          hash ^= normalized.charCodeAt(i);
+          hash = Math.imul(hash, 16777619);
+        }
+        return `sgf-${(hash >>> 0).toString(36)}-${normalized.length.toString(36)}`;
+      }
+
+      function publicGameUrl(publicId) {
+        return `${location.origin}/g/${publicId}`;
+      }
+
+      function publicGameApiUrl(publicId) {
+        return `/api/archive/public-games/%5BpublicId%5D?publicId=${encodeURIComponent(publicId)}`;
+      }
+
+      function publicIdFromLocation() {
+        const match = location.pathname.match(/^\/g\/([^/]+)$/);
+        return match?.[1] ?? new URLSearchParams(location.search).get("game");
+      }
+
+      function archiveGameId(game) {
+        return [game.title, game.event, game.round, game.date, game.result, game.sourceType]
+          .map((value) => String(value ?? "").trim())
+          .join("|");
+      }
+
+      function getDeletedArchiveIds() {
+        try {
+          return new Set(JSON.parse(safeGetLocalStorage(LOCAL_ARCHIVE_DELETED_KEY, "[]") || "[]"));
+        } catch {
+          return new Set();
+        }
+      }
+
+      function saveDeletedArchiveIds(ids) {
+        safeSetLocalStorage(LOCAL_ARCHIVE_DELETED_KEY, JSON.stringify([...ids]), "Could not update local archive cleanup state.");
+      }
+
+      function visibleArchiveGames() {
+        const deleted = getDeletedArchiveIds();
+        return getLocalArchiveRecords().filter((game) => !deleted.has(archiveGameId(game)));
+      }
+
+      function getLocalArchiveRecords() {
+        try {
+          const records = JSON.parse(safeGetLocalStorage(LOCAL_ARCHIVE_KEY, "[]") || "[]");
+          return Array.isArray(records) ? records : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function saveLocalArchiveRecords(records) {
+        safeSetLocalStorage(LOCAL_ARCHIVE_KEY, JSON.stringify(records), "Local archive save failed. Please export your SGF.");
+      }
+
+      function makeLocalArchiveId() {
+        return `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      }
+      const publicCollectionSeeds = [
+        { title: "By tournament", detail: "Events and round history" },
+        { title: "By player", detail: "Public player archives" },
+        { title: "By year", detail: "Long-term game memory" },
+      ];
+      function applyI18n() {
+        document.querySelectorAll("[data-i18n]").forEach((node) => {
+          node.textContent = t(node.dataset.i18n);
+        });
+      }
+
+      function selectColor(color) {
+        board.setCurrentColor(color);
+        colorButtons.forEach((item) => {
+          item.setAttribute("aria-pressed", String(item.dataset.color === color));
+        });
+      }
+
+      function updateLockButtons() {
+        lockButtons.forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.lockColor === setupColorLock));
+        });
+      }
+
+      function getNaturalNextColor() {
+        return board.currentNode?.afterSnapshot?.currentColor ?? board.currentColor;
+      }
+
+      function updateCaptures(prisoners = board.getPrisoners()) {
+        blackCaptures.textContent = prisoners.black;
+        whiteCaptures.textContent = prisoners.white;
+        renderPrisoners(blackPrisoners, prisoners.black, "black");
+        renderPrisoners(whitePrisoners, prisoners.white, "white");
+      }
+
+      function renderPrisoners(container, count, color) {
+        container.replaceChildren();
+        container.setAttribute("aria-label", `${color === "black" ? "Black" : "White"} captures ${count}`);
+        const positions = [
+          [32, 26],
+          [25, 25],
+          [39, 25],
+          [32, 19],
+          [32, 32],
+          [25, 19],
+          [39, 19],
+          [25, 32],
+          [39, 32],
+          [19, 25],
+          [45, 25],
+          [20, 18],
+          [44, 18],
+          [20, 32],
+          [44, 32],
+          [32, 13],
+          [32, 38],
+          [15, 25],
+        ];
+        for (let i = 0; i < Math.min(count, positions.length); i += 1) {
+          const stone = document.createElement("span");
+          stone.className = `stone-dot ${color === "black" ? "white" : "black"}`;
+          stone.style.left = `${positions[i][0]}px`;
+          stone.style.top = `${positions[i][1]}px`;
+          stone.style.zIndex = String(i + 1);
+          container.append(stone);
+        }
+      }
+
+      function updateNavigation() {
+        const state = board.getNavigationState();
+        moveCounter.textContent = `${state.moveNumber} / ${state.mainLineLength}`;
+        navButtons.forEach((button) => {
+          const action = button.dataset.nav;
+          button.disabled = action.startsWith("-") || action === "start" ? !state.canBackward : !state.canForward;
+        });
+        playButton.disabled = !state.canForward;
+        if (!state.canForward) stopAutoplay();
+      }
+
+      function setActiveView(view) {
+        document.body.dataset.activeView = view;
+        tabButtons.forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.tab === view));
+        });
+      }
+
+      function makeChip(label, tone = "") {
+        const chip = document.createElement("span");
+        chip.className = `chip ${tone}`.trim();
+        chip.textContent = label;
+        return chip;
+      }
+
+      function makeRecordField(label, value) {
+        const field = document.createElement("div");
+        field.className = "record-field";
+        const key = document.createElement("span");
+        key.textContent = label;
+        const text = document.createElement("span");
+        text.textContent = value || "-";
+        field.append(key, text);
+        return field;
+      }
+
+      function renderGameCard(game, options = {}) {
+        const card = document.createElement("article");
+        card.className = `record-card ${options.onOpen ? "interactive" : ""}`.trim();
+        if (options.onOpen) {
+          card.tabIndex = 0;
+          card.setAttribute("role", "button");
+          card.setAttribute("aria-label", `Open ${game.title} in editor`);
+          card.addEventListener("click", options.onOpen);
+          card.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              options.onOpen();
+            }
+          });
+        }
+        const title = document.createElement("h3");
+        title.className = "record-title";
+        title.textContent = game.title;
+        const meta = document.createElement("div");
+        meta.className = "record-meta";
+        meta.textContent = [game.event, game.date].filter(Boolean).join(" / ");
+        const fields = document.createElement("div");
+        fields.className = "record-fields";
+        fields.append(
+          makeRecordField("Round", game.round),
+          makeRecordField("Result", game.result),
+          makeRecordField("Board", game.boardSize),
+          makeRecordField("Source", game.sourceType || "SGF")
+        );
+        const chips = document.createElement("div");
+        chips.className = "chip-row";
+        if (game.visibility) chips.append(makeChip(game.visibility, game.visibility));
+        if (game.opponentVisibility === "hidden") chips.append(makeChip("opponent hidden"));
+        card.append(title, meta, fields, chips);
+        if (options.detailButton) {
+          const actions = document.createElement("div");
+          actions.className = "record-actions";
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = "Open";
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            options.onOpen?.();
+          });
+          actions.append(button);
+          if (game.publicId) {
+            const shareButton = document.createElement("button");
+            shareButton.type = "button";
+            shareButton.textContent = "Copy link";
+            shareButton.addEventListener("click", async (event) => {
+              event.stopPropagation();
+              const url = publicGameUrl(game.publicId);
+              try {
+                await navigator.clipboard.writeText(url);
+                status.textContent = "Public link copied.";
+              } catch {
+                status.textContent = url;
+              }
+            });
+            actions.append(shareButton);
+            if (game.ownedByCurrentUser) {
+              const deleteButton = document.createElement("button");
+              deleteButton.type = "button";
+              deleteButton.className = "delete-action";
+              deleteButton.textContent = "Unpublish";
+              deleteButton.addEventListener("click", (event) => {
+                event.stopPropagation();
+                deletePublicGame(game.publicId).catch(() => {
+                  status.textContent = "Could not unpublish this SGF.";
+                });
+              });
+              actions.append(deleteButton);
+            }
+          }
+          actions.append(makeInfoButton(game));
+          card.append(actions);
+        }
+        return card;
+      }
+
+      function readMainLineNodes(sgf = "") {
+        const nodes = [];
+        let depth = 0;
+        let valueOpen = false;
+        let escaped = false;
+        let nodeStart = -1;
+
+        const finishNode = (index) => {
+          if (nodeStart < 0) return;
+          nodes.push(sgf.slice(nodeStart, index));
+          nodeStart = -1;
+        };
+
+        for (let i = 0; i < sgf.length; i += 1) {
+          const char = sgf[i];
+          if (valueOpen) {
+            if (escaped) {
+              escaped = false;
+            } else if (char === "\\") {
+              escaped = true;
+            } else if (char === "]") {
+              valueOpen = false;
+            }
+            continue;
+          }
+          if (char === "[") {
+            valueOpen = true;
+          } else if (char === "(") {
+            if (depth === 1) finishNode(i);
+            depth += 1;
+          } else if (char === ")") {
+            if (depth === 1) finishNode(i);
+            depth = Math.max(0, depth - 1);
+          } else if (char === ";" && depth === 1) {
+            finishNode(i);
+            nodeStart = i + 1;
+          }
+        }
+        finishNode(sgf.length);
+        return nodes;
+      }
+
+      function parsePreviewMoves(sgf = "") {
+        return readMainLineNodes(sgf).map((node) => {
+          const match = node.match(/(?:^|[^A-Z])(B|W)\[([a-s]{2})\]/);
+          if (!match) return null;
+          return {
+            color: match[1] === "B" ? "black" : "white",
+            x: match[2].charCodeAt(0) - 97,
+            y: match[2].charCodeAt(1) - 97,
+          };
+        }).filter(Boolean);
+      }
+
+      function previewPositionFromMoves(moves) {
+        const stones = new Map();
+        const limit = Math.min(moves.length, Math.max(12, Math.ceil(moves.length * 0.5)));
+        const key = (x, y) => `${x},${y}`;
+        const neighbors = (x, y) => [
+          { x: x - 1, y },
+          { x: x + 1, y },
+          { x, y: y - 1 },
+          { x, y: y + 1 },
+        ].filter((point) => point.x >= 0 && point.x < 19 && point.y >= 0 && point.y < 19);
+        const groupAt = (x, y) => {
+          const color = stones.get(key(x, y));
+          if (!color) return { stones: [], liberties: 0 };
+          const seen = new Set([key(x, y)]);
+          const stack = [{ x, y }];
+          const group = [];
+          const liberties = new Set();
+          while (stack.length) {
+            const point = stack.pop();
+            group.push(point);
+            neighbors(point.x, point.y).forEach((neighbor) => {
+              const neighborKey = key(neighbor.x, neighbor.y);
+              const neighborColor = stones.get(neighborKey);
+              if (!neighborColor) {
+                liberties.add(neighborKey);
+              } else if (neighborColor === color && !seen.has(neighborKey)) {
+                seen.add(neighborKey);
+                stack.push(neighbor);
+              }
+            });
+          }
+          return { stones: group, liberties: liberties.size };
+        };
+
+        moves.slice(0, limit).forEach((move) => {
+          const moveKey = key(move.x, move.y);
+          if (stones.has(moveKey)) return;
+          stones.set(moveKey, move.color);
+          const opponent = move.color === "black" ? "white" : "black";
+          neighbors(move.x, move.y).forEach((neighbor) => {
+            if (stones.get(key(neighbor.x, neighbor.y)) !== opponent) return;
+            const group = groupAt(neighbor.x, neighbor.y);
+            if (group.liberties === 0) group.stones.forEach((stone) => stones.delete(key(stone.x, stone.y)));
+          });
+          const ownGroup = groupAt(move.x, move.y);
+          if (ownGroup.liberties === 0) stones.delete(moveKey);
+        });
+
+        return [...stones.entries()].map(([point, color]) => {
+          const [x, y] = point.split(",").map(Number);
+          return { x, y, color };
+        });
+      }
+
+      function makeBoardThumb(game, large = false) {
+        const thumb = document.createElement("span");
+        thumb.className = `board-thumb ${large ? "large" : ""}`.trim();
+        previewPositionFromMoves(parsePreviewMoves(game.sgf)).forEach((move) => {
+          const stone = document.createElement("span");
+          stone.className = `thumb-stone ${move.color}`;
+          stone.style.left = `calc(7px + ${(move.x / 18) * 100}% - ${(move.x / 18) * 14}px)`;
+          stone.style.top = `calc(7px + ${(move.y / 18) * 100}% - ${(move.y / 18) * 14}px)`;
+          thumb.append(stone);
+        });
+        return thumb;
+      }
+
+      function makeArchivePublishButton(game) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "publish-action";
+        button.textContent = game.visibility === "public" ? "Public" : "Publish";
+        button.disabled = game.visibility === "public";
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          publishArchiveGame(game).catch(() => {
+            status.textContent = "Could not publish SGF record.";
+          });
+        });
+        return button;
+      }
+
+      function makeInfoButton(game) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "info-action";
+        button.textContent = "i";
+        button.title = "Game info";
+        button.setAttribute("aria-label", `Show info for ${game.title}`);
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          renderSummary(game);
+          setActiveView("summary");
+        });
+        return button;
+      }
+
+      function makeArchiveRow(game, options = {}) {
+        const row = document.createElement("article");
+        row.className = "archive-game-row";
+        row.tabIndex = 0;
+        row.setAttribute("role", "button");
+        row.setAttribute("aria-label", `Open ${game.title}`);
+        const text = document.createElement("span");
+        const title = document.createElement("strong");
+        title.textContent = game.title;
+        const meta = document.createElement("span");
+        meta.textContent = [game.event, game.round, game.result].filter(Boolean).join(" / ");
+        text.append(title, meta);
+        const mark = document.createElement("span");
+        mark.className = "action-mark";
+        mark.textContent = ">";
+        row.append(text, mark);
+        if (options.canPublish) row.append(makeArchivePublishButton(game));
+        if (options.canDelete) row.append(makeLocalArchiveDeleteButton(game));
+        row.append(makeInfoButton(game));
+        row.addEventListener("click", () => openArchiveGame(game));
+        row.addEventListener("keydown", (event) => {
+          if (event.target !== row) return;
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openArchiveGame(game);
+          }
+        });
+        return row;
+      }
+
+      function makeArchiveThumbCard(game, options = {}) {
+        const card = document.createElement("article");
+        card.className = "thumb-card";
+        card.tabIndex = 0;
+        card.setAttribute("role", "button");
+        card.setAttribute("aria-label", `Open ${game.title}`);
+        card.append(makeBoardThumb(game, true));
+        const title = document.createElement("strong");
+        title.textContent = game.title;
+        const meta = document.createElement("span");
+        meta.textContent = [game.round, game.result].filter(Boolean).join(" / ");
+        card.append(title, meta);
+        if (options.canPublish) card.append(makeArchivePublishButton(game));
+        if (options.canDelete) card.append(makeLocalArchiveDeleteButton(game));
+        card.append(makeInfoButton(game));
+        card.addEventListener("click", () => openArchiveGame(game));
+        card.addEventListener("keydown", (event) => {
+          if (event.target !== card) return;
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openArchiveGame(game);
+          }
+        });
+        return card;
+      }
+
+      function makeLocalArchiveDeleteButton(game) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "delete-action";
+        button.textContent = "Delete";
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          deleteLocalArchiveGame(game);
+        });
+        return button;
+      }
+
+      function deleteLocalArchiveGame(game) {
+        if (!window.confirm(`Delete "${game.title}" from this archive?`)) return;
+        if (game.localArchiveId) {
+          saveLocalArchiveRecords(getLocalArchiveRecords().filter((record) => record.localArchiveId !== game.localArchiveId));
+          if (activeLocalArchiveId === game.localArchiveId) activeLocalArchiveId = null;
+          renderMyArchive();
+          status.textContent = "Archive SGF deleted.";
+          return;
+        }
+        const deleted = getDeletedArchiveIds();
+        deleted.add(archiveGameId(game));
+        saveDeletedArchiveIds(deleted);
+        renderMyArchive();
+        status.textContent = "Archive SGF deleted.";
+      }
+
+      function currentArchiveRecord(options = {}) {
+        const draft = getIdentityDraft();
+        const metadata = board.getMetadata();
+        const archiveRecord = options.includeArchiveIdentity && activeLocalArchiveId
+          ? getLocalArchiveRecords().find((item) => item.localArchiveId === activeLocalArchiveId)
+          : null;
+        const title = metadata.gameName || draft.round || `SGF ${new Date().toLocaleString([], {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`;
+        const eventName = metadata.event?.trim() || "";
+        return {
+          localArchiveId: archiveRecord?.localArchiveId,
+          title,
+          event: eventName,
+          round: draft.round,
+          date: draft.date,
+          result: metadata.result,
+          visibility: draft.visibility || "private",
+          opponentVisibility: draft.opponentVisibility === "hide" ? "hidden" : "show",
+          recorderColor: draft.recorderColor || "",
+          boardSize: `${board.size}x${board.size}`,
+          komi: metadata.komi,
+          rules: metadata.rules,
+          recorderNickname: draft.recorderNickname || "Anonymous recorder",
+          tags: [],
+          notes: "",
+          blackPlayerName: metadata.blackName,
+          whitePlayerName: metadata.whiteName,
+          sgf: board.toSGF(),
+          publicId: archiveRecord?.publicId,
+          group: eventName ? "tournament" : "other",
+          sourceType: loadedFileName ? "imported" : "draft",
+        };
+      }
+
+      function saveCurrentRecordToArchive(options = {}) {
+        writeMetadata();
+        const shouldOverwrite = Boolean(options.overwrite && activeLocalArchiveId);
+        const record = {
+          ...currentArchiveRecord({ includeArchiveIdentity: shouldOverwrite }),
+          localArchiveId: shouldOverwrite ? activeLocalArchiveId : makeLocalArchiveId(),
+          sourceType: "local",
+          savedAt: new Date().toISOString(),
+        };
+        const records = getLocalArchiveRecords();
+        const existingIndex = records.findIndex((item) => item.localArchiveId === record.localArchiveId);
+        if (existingIndex >= 0) records[existingIndex] = record;
+        else records.unshift(record);
+        saveLocalArchiveRecords(records);
+        activeLocalArchiveId = record.localArchiveId;
+        hasUnsavedArchiveChanges = false;
+        hasUnsavedExportChanges = false;
+        saveState({ pristine: true });
+        renderArchiveShell();
+        status.textContent = options.overwrite ? "Archive record overwritten." : "Record saved to My Archive.";
+        showSaveToast(options.overwrite ? "Archive record overwritten" : "Saved to My Archive");
+      }
+
+      function fileSlug(title) {
+        return (title || "game-record")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "") || "game-record";
+      }
+
+      function escapeSgfValue(value) {
+        return String(value ?? "").replace(/\\/g, "\\\\").replace(/\]/g, "\\]");
+      }
+
+      function replaceSgfProperty(sgf, property, value) {
+        const escaped = `${property}[${escapeSgfValue(value)}]`;
+        const pattern = new RegExp(`${property}\\[(?:\\\\.|[^\\]])*\\]`);
+        if (pattern.test(sgf)) return sgf.replace(pattern, escaped);
+        return sgf.replace(";", `;${escaped}`);
+      }
+
+      function publicOpponentLabel(record) {
+        return record.round ? `${record.round} opponent` : "Opponent";
+      }
+
+      function maskedPublicRecord(record) {
+        if (record.opponentVisibility !== "hidden") return { ...record, recorderColor: record.recorderColor || "" };
+        const label = publicOpponentLabel(record);
+        const publicRecord = { ...record, recorderColor: record.recorderColor || "" };
+        if (record.recorderColor === "black") {
+          publicRecord.whitePlayerName = label;
+          publicRecord.sgf = replaceSgfProperty(publicRecord.sgf, "PW", label);
+        } else if (record.recorderColor === "white") {
+          publicRecord.blackPlayerName = label;
+          publicRecord.sgf = replaceSgfProperty(publicRecord.sgf, "PB", label);
+        }
+        return publicRecord;
+      }
+
+      function openArchiveGame(game) {
+        publicReadOnly = false;
+        activePublicGame = null;
+        activeLocalArchiveId = game.localArchiveId ?? null;
+        hasUnsavedArchiveChanges = false;
+        hasUnsavedExportChanges = false;
+        document.body.dataset.publicReadonly = "false";
+        document.body.dataset.publicContext = "false";
+        board.removeAttribute("disabled");
+        board.removeAttribute("readonly");
+        if (game.sgf) {
+          board.loadSGF(game.sgf);
+          loadedFileName = `${fileSlug(game.title)}.sgf`;
+          loadedFileHandle = null;
+          readMetadata();
+          applyIdentityDraft({
+            round: game.round ?? "",
+            date: game.date ?? "",
+            recorderNickname: game.recorderNickname ?? "",
+            tags: "",
+            notes: "",
+            visibility: game.visibility ?? "private",
+            opponentVisibility: game.opponentVisibility === "hidden" ? "hide" : "show",
+            recorderColor: game.recorderColor ?? "",
+          });
+        }
+        board.jumpToStart();
+        updateGameState(board.currentColor);
+        setActiveView("board");
+        saveState({ pristine: true });
+        status.textContent = `"${game.title}" opened from My Archive.`;
+      }
+
+      function openPublicGame(game) {
+        if (!game?.sgf) return;
+        publicReadOnly = false;
+        activePublicGame = game;
+        activeLocalArchiveId = null;
+        hasUnsavedArchiveChanges = true;
+        hasUnsavedExportChanges = true;
+        document.body.dataset.publicReadonly = "false";
+        document.body.dataset.publicContext = "true";
+        board.loadSGF(game.sgf);
+        board.jumpToStart();
+        board.removeAttribute("disabled");
+        board.removeAttribute("readonly");
+        loadedFileName = `${game.publicId || fileSlug(game.title)}.sgf`;
+        loadedFileHandle = null;
+        readMetadata();
+        applyIdentityDraft({
+          round: game.round ?? "",
+          date: game.date ?? "",
+          recorderNickname: game.recorderNickname ?? "",
+          tags: "",
+          notes: "",
+          visibility: "private",
+          opponentVisibility: "show",
+          recorderColor: game.recorderColor ?? "",
+        });
+        updateGameState(board.currentColor);
+        setActiveView("board");
+        publicShareTitle.textContent = game.title || "Public SGF copy";
+        publicShareMeta.textContent = [game.event, game.date, game.result, game.recorderNickname ? `Published by ${game.recorderNickname}` : ""]
+          .filter(Boolean)
+          .join(" / ") || "Editable local copy of a public game record";
+        saveState();
+        status.textContent = `Editable local copy opened${game.publicId ? ` / ${game.publicId}` : ""}. Public record is unchanged.`;
+      }
+
+      function renderSummary(game = currentArchiveRecord({ includeArchiveIdentity: true })) {
+        summaryChips.replaceChildren();
+        summaryChips.append(makeChip(game.visibility || "private", game.visibility || "private"));
+        summaryChips.append(makeChip(game.opponentVisibility === "hidden" ? "opponent hidden" : "opponent shown"));
+        const hiddenLabel = game.opponentVisibility === "hidden" ? publicOpponentLabel(game) : "";
+        const blackLabel = game.opponentVisibility === "hidden" && game.recorderColor === "white" ? hiddenLabel : game.blackPlayerName || "Unknown";
+        const whiteLabel = game.opponentVisibility === "hidden" && game.recorderColor === "black" ? hiddenLabel : game.whitePlayerName || "Unknown";
+
+        const rows = [
+          ["Game", game.title],
+          ["Black", blackLabel],
+          ["White", whiteLabel],
+          ["Event", game.event],
+          ["Round", game.round || "-"],
+          ["Result", game.result || "-"],
+          ["Date", game.date || "-"],
+          ["Board", game.boardSize],
+          ["Komi", game.komi || "-"],
+          ["Rules", game.rules || "-"],
+          ["My color", game.recorderColor ? game.recorderColor[0].toUpperCase() + game.recorderColor.slice(1) : "Recorder only"],
+          ["Published by", game.recorderNickname || "-"],
+        ];
+
+        summaryList.replaceChildren();
+        rows.forEach(([label, value]) => {
+          const row = document.createElement("div");
+          row.className = "summary-row";
+          const key = document.createElement("span");
+          key.textContent = label;
+          const text = document.createElement("span");
+          text.textContent = value;
+          row.append(key, text);
+          summaryList.append(row);
+        });
+      }
+
+      function renderArchiveGroup(title, games) {
+        const section = document.createElement("details");
+        section.className = "archive-section";
+        section.open = true;
+        const summary = document.createElement("summary");
+        summary.textContent = `${title} (${games.length})`;
+        const body = document.createElement("div");
+        body.className = archiveViewMode === "thumbs" ? "archive-thumb-grid" : "archive-section-body";
+        games.forEach((game) => {
+          const canDelete = game.sourceType !== "draft";
+          const canPublish = game.sourceType !== "draft" && game.visibility !== "public";
+          body.append(archiveViewMode === "thumbs" ? makeArchiveThumbCard(game, { canDelete, canPublish }) : makeArchiveRow(game, { canDelete, canPublish }));
+        });
+        section.append(summary, body);
+        myArchiveList.append(section);
+      }
+
+      function eventFolderName(game) {
+        return game.event?.trim() || "Unassigned tournament";
+      }
+
+      function renderArchiveFolder(title, games) {
+        const folder = document.createElement("details");
+        folder.className = "archive-folder";
+        const summary = document.createElement("summary");
+        summary.textContent = `${title} (${games.length})`;
+        const body = document.createElement("div");
+        body.className = archiveViewMode === "thumbs" ? "archive-thumb-grid" : "archive-section-body";
+        games.forEach((game) => {
+          const canPublish = game.visibility !== "public";
+          body.append(archiveViewMode === "thumbs" ? makeArchiveThumbCard(game, { canDelete: true, canPublish }) : makeArchiveRow(game, { canDelete: true, canPublish }));
+        });
+        folder.append(summary, body);
+        return folder;
+      }
+
+      function renderTournamentArchive(games) {
+        const section = document.createElement("details");
+        section.className = "archive-section";
+        section.open = true;
+        const summary = document.createElement("summary");
+        summary.textContent = `Tournament Games (${games.length})`;
+        const body = document.createElement("div");
+        body.className = "archive-section-body";
+        const folders = new Map();
+        games.forEach((game) => {
+          const name = eventFolderName(game);
+          if (!folders.has(name)) folders.set(name, []);
+          folders.get(name).push(game);
+        });
+        [...folders.entries()]
+          .sort(([first], [second]) => first.localeCompare(second))
+          .forEach(([event, eventGames]) => {
+            body.append(renderArchiveFolder(event, eventGames));
+          });
+        section.append(summary, body);
+        myArchiveList.append(section);
+      }
+
+      function isTournamentGame(game) {
+        return Boolean(game.event?.trim()) || game.group === "tournament";
+      }
+
+      function renderMyArchive() {
+        myArchiveList.replaceChildren();
+        const archiveGames = visibleArchiveGames();
+        if (archiveGames.length === 0) {
+          const empty = document.createElement("article");
+          empty.className = "record-card";
+          const title = document.createElement("h3");
+          title.className = "record-title";
+          title.textContent = "No saved SGF records yet";
+          const meta = document.createElement("p");
+          meta.className = "record-meta";
+          meta.textContent = "Save the current board to start building your local archive.";
+          empty.append(title, meta);
+          myArchiveList.append(empty);
+          return;
+        }
+        renderTournamentArchive(archiveGames.filter(isTournamentGame));
+        renderArchiveGroup("Other Games", archiveGames.filter((game) => !isTournamentGame(game)));
+      }
+
+      function renderPublicCollections() {
+        publicCollections.replaceChildren();
+        publicCollectionSeeds.forEach((collection) => {
+          const card = document.createElement("article");
+          card.className = "collection-card";
+          const title = document.createElement("strong");
+          title.textContent = collection.title;
+          const detail = document.createElement("span");
+          detail.textContent = collection.detail;
+          card.append(title, detail);
+          publicCollections.append(card);
+        });
+      }
+
+      function renderPublicArchive() {
+        renderPublicCollections();
+        const query = publicSearch.value.trim().toLowerCase();
+        const games = publicServerGames.filter((game) => {
+          const haystack = [
+            game.title,
+            game.gameName,
+            game.blackPlayerName,
+            game.whitePlayerName,
+            game.event,
+            game.eventName,
+            game.round,
+            game.roundName,
+            game.result,
+            game.komi,
+            game.rules,
+            game.date,
+            game.recorderNickname,
+            game.boardSize,
+          ]
+            .join(" ")
+            .toLowerCase();
+          return !query || haystack.includes(query);
+        });
+        publicArchiveList.replaceChildren();
+        games.forEach((game) => {
+          publicArchiveList.append(renderGameCard(game, { detailButton: true, onOpen: () => openPublicGame(game) }));
+        });
+        if (games.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "record-meta";
+          empty.textContent = query ? "No public SGF records match this filter." : "No public SGF records yet.";
+          publicArchiveList.append(empty);
+        }
+      }
+
+      function renderArchiveShell() {
+        renderMyArchive();
+        renderPublicArchive();
+        if (document.body.dataset.activeView === "summary") renderSummary();
+      }
+
+      function renderVariationTree() {
+        variationTree.replaceChildren();
+        if (board.rootNode.children.length === 0) return;
+
+        const stepX = 34;
+        const stepY = 30;
+        const padX = 26;
+        const padY = 24;
+        const nodes = [];
+        const lines = [];
+        const occupied = new Map();
+
+        const reserveLane = (depth, preferredLane) => {
+          let lane = Math.max(0, preferredLane);
+          if (!occupied.has(depth)) occupied.set(depth, new Set());
+          const lanes = occupied.get(depth);
+          while (lanes.has(lane)) lane += 1;
+          lanes.add(lane);
+          return lane;
+        };
+
+        const walk = (node, depth, preferredLane) => {
+          const current = { node, depth, lane: reserveLane(depth, preferredLane) };
+          nodes.push(current);
+          const [mainChild, ...branchChildren] = node.children;
+
+          if (mainChild) {
+            const childItem = walk(mainChild, depth + 1, current.lane);
+            lines.push({ from: current, to: childItem });
+          }
+
+          branchChildren.forEach((child, index) => {
+            const childItem = walk(child, depth + 1, current.lane + index + 1);
+            lines.push({ from: current, to: childItem });
+          });
+
+          return current;
+        };
+
+        const [mainRootChild, ...rootBranchChildren] = board.rootNode.children;
+        if (mainRootChild) walk(mainRootChild, 1, 0);
+        rootBranchChildren.forEach((child, index) => {
+          walk(child, 1, index + 1);
+        });
+
+        const maxDepth = Math.max(...nodes.map((item) => item.depth), 1);
+        const maxLane = Math.max(...nodes.map((item) => item.lane), 0);
+        const width = padX * 2 + maxDepth * stepX;
+        const height = Math.max(132, padY * 2 + maxLane * stepY);
+        const track = document.createElement("div");
+        track.className = "variation-track";
+        track.style.width = `${width}px`;
+        track.style.height = `${height}px`;
+
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.classList.add("variation-lines");
+        svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        svg.setAttribute("width", String(width));
+        svg.setAttribute("height", String(height));
+
+        const position = (item) => ({
+          x: padX + item.depth * stepX,
+          y: padY + item.lane * stepY,
+        });
+
+        lines.forEach((line) => {
+          const from = position(line.from);
+          const to = position(line.to);
+          const edge = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          edge.setAttribute("x1", String(from.x));
+          edge.setAttribute("y1", String(from.y));
+          edge.setAttribute("x2", String(to.x));
+          edge.setAttribute("y2", String(to.y));
+          svg.append(edge);
+        });
+
+        track.append(svg);
+        let currentPoint = null;
+
+        nodes.forEach((item) => {
+          const point = position(item);
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `variation-node ${item.node.move.color}`;
+          if (item.node === board.currentNode) button.classList.add("current");
+          if (item.node.comment) button.classList.add("has-comment");
+          button.textContent = item.node.comment ? "" : String(item.depth);
+          button.style.left = `${point.x}px`;
+          button.style.top = `${point.y}px`;
+          button.setAttribute("aria-label", `Move ${item.depth}`);
+          if (item.node === board.currentNode) currentPoint = point;
+          let deleteTimer = null;
+          const clearDeleteTimer = () => {
+            if (!deleteTimer) return;
+            window.clearTimeout(deleteTimer);
+            deleteTimer = null;
+          };
+          button.addEventListener("pointerdown", (event) => {
+            if (event.button !== undefined && event.button !== 0) return;
+            deleteTimer = window.setTimeout(() => {
+              deleteTimer = null;
+              if (!window.confirm(`Delete variation from move ${item.depth}?`)) return;
+              if (board.deleteNode(item.node.id)) {
+                updateGameState(board.currentColor);
+                setQuietStatus();
+                saveState();
+              }
+            }, 650);
+          });
+          ["pointerup", "pointerleave", "pointercancel"].forEach((eventName) => {
+            button.addEventListener(eventName, clearDeleteTimer);
+          });
+          button.addEventListener("contextmenu", (event) => event.preventDefault());
+          button.addEventListener("click", () => {
+            clearDeleteTimer();
+            if (board.jumpToNode(item.node.id)) {
+              updateGameState(board.currentColor);
+              saveState();
+            }
+          });
+          track.append(button);
+        });
+
+        variationTree.append(track);
+        if (currentPoint) {
+          const targetLeft = currentPoint.x - variationTree.clientWidth * 0.45;
+          const targetTop = currentPoint.y - variationTree.clientHeight * 0.5;
+          variationTree.scrollLeft = Math.max(0, targetLeft);
+          variationTree.scrollTop = Math.max(0, targetTop);
+        }
+      }
+
+      function updateGameState(nextColor = board.currentColor, prisoners = board.getPrisoners()) {
+        updateCaptures(prisoners);
+        selectColor(setupColorLock ?? nextColor);
+        updateLockButtons();
+        updateNavigation();
+        renderVariationTree();
+        renderArchiveShell();
+        syncCommentEditor();
+      }
+
+      function writeMetadata() {
+        writeMetadataSilently();
+        renderArchiveShell();
+        saveState();
+      }
+
+      function sanitizePointMargin(value = "") {
+        let clean = "";
+        for (const char of String(value).trim()) {
+          if (/[0-9.]/.test(char)) clean += char;
+          else break;
+        }
+        const dotIndex = clean.indexOf(".");
+        if (dotIndex !== -1) {
+          clean = `${clean.slice(0, dotIndex + 1)}${clean.slice(dotIndex + 1).replace(/\./g, "")}`;
+          const [whole, fraction = ""] = clean.split(".");
+          clean = `${whole}.${fraction.startsWith("5") ? "5" : ""}`;
+        }
+        const numeric = Number.parseFloat(clean);
+        if (Number.isFinite(numeric) && numeric > 400) return "400";
+        return clean;
+      }
+
+      function isValidPointMargin(value = "") {
+        if (!/^\d+(?:\.5)?$/.test(value)) return false;
+        const numeric = Number(value);
+        return Number.isFinite(numeric) && numeric <= 400;
+      }
+
+      function commitPointMargin() {
+        const clean = sanitizePointMargin(resultDetail.value);
+        resultDetail.value = isValidPointMargin(clean) ? clean : clean.replace(/\.$/, "");
+      }
+
+      function syncResultControls() {
+        const hasWinner = resultWinner.value === "black" || resultWinner.value === "white";
+        const usesPoints = resultMethod.value === "points";
+        resultCombo.dataset.resultState = hasWinner ? "detail" : "single";
+        resultDetailPicker.hidden = !hasWinner;
+        resultByText.hidden = !hasWinner;
+        resultDetailPicker.dataset.points = usesPoints ? "on" : "off";
+        resultMethod.disabled = !hasWinner;
+        resultDetail.disabled = !hasWinner || !usesPoints;
+        resultDetail.placeholder = usesPoints ? "0.5" : "";
+        if (!usesPoints) resultDetail.value = "";
+        else resultDetail.value = sanitizePointMargin(resultDetail.value);
+        if (!hasWinner) closeResultDetailMenu();
+      }
+
+      function openResultDetailMenu() {
+        if (resultDetailPicker.hidden) return;
+        resultDetailMenu.hidden = false;
+        resultDetail.setAttribute("aria-expanded", "true");
+      }
+
+      function closeResultDetailMenu() {
+        resultDetailMenu.hidden = true;
+        resultDetail.setAttribute("aria-expanded", "false");
+      }
+
+      function toggleResultDetailMenu() {
+        if (resultDetailMenu.hidden) openResultDetailMenu();
+        else closeResultDetailMenu();
+      }
+
+      function chooseResultDetail(value) {
+        resultMethod.value = value === "0.5" ? "points" : ({ Resignation: "R", Time: "T", Forfeit: "F" }[value] || "points");
+        resultDetail.value = value === "0.5" ? "0.5" : "";
+        syncResultControls();
+        closeResultDetailMenu();
+        writeMetadata();
+      }
+
+      function composeResultValue() {
+        if (resultWinner.value === "jigo") return "0";
+        if (resultWinner.value !== "black" && resultWinner.value !== "white") return "";
+        const side = resultWinner.value === "black" ? "B" : "W";
+        if (["R", "T", "F"].includes(resultMethod.value)) return `${side}+${resultMethod.value}`;
+        const detail = sanitizePointMargin(resultDetail.value.trim());
+        resultDetail.value = detail;
+        if (!isValidPointMargin(detail)) return "";
+        return `${side}+${detail}`;
+      }
+
+      function readResultValue(value = "") {
+        const normalized = String(value || "").trim();
+        const pointWin = normalized.match(/^([BW])\+(\d+(?:\.5)?)$/i);
+        const methodWin = normalized.match(/^([BW])\+([RTF])$/i);
+        if (pointWin && isValidPointMargin(pointWin[2])) {
+          resultWinner.value = pointWin[1].toUpperCase() === "B" ? "black" : "white";
+          resultMethod.value = "points";
+          resultDetail.value = pointWin[2];
+        } else if (methodWin) {
+          resultWinner.value = methodWin[1].toUpperCase() === "B" ? "black" : "white";
+          resultMethod.value = methodWin[2].toUpperCase();
+          resultDetail.value = "";
+        } else if (/^(0|jigo|draw)$/i.test(normalized)) {
+          resultWinner.value = "jigo";
+          resultMethod.value = "points";
+          resultDetail.value = "";
+        } else {
+          resultWinner.value = "";
+          resultMethod.value = "points";
+          resultDetail.value = "";
+        }
+        syncResultControls();
+      }
+
+      function writeMetadataSilently() {
+        board.setMetadata({
+          gameName: gameName.value.trim(),
+          blackName: blackName.value.trim(),
+          whiteName: whiteName.value.trim(),
+          event: eventName.value.trim(),
+          result: composeResultValue(),
+          komi: komiValue.value.trim() || "6.5",
+          rules: rulesSelect.value || "Japanese",
+        });
+      }
+
+      function readMetadata() {
+        const metadata = board.getMetadata();
+        gameName.value = metadata.gameName ?? "";
+        blackName.value = metadata.blackName ?? "";
+        whiteName.value = metadata.whiteName ?? "";
+        eventName.value = metadata.event ?? "";
+        readResultValue(metadata.result ?? "");
+        komiValue.value = metadata.komi ?? "6.5";
+        rulesSelect.value = metadata.rules ?? "Japanese";
+      }
+
+      function getIdentityDraft() {
+        return {
+          round: roundName.value.trim(),
+          date: gameDate.value,
+          recorderNickname: recorderNickname.value.trim(),
+          tags: "",
+          notes: "",
+          visibility: visibilitySelect.value,
+          opponentVisibility: opponentVisibilitySelect.value,
+          recorderColor: recorderColorSelect.value,
+        };
+      }
+
+      function applyIdentityDraft(draft = {}) {
+        roundName.value = draft.round ?? "";
+        gameDate.value = draft.date ?? "";
+        recorderNickname.value = draft.recorderNickname ?? "";
+        gameTags.value = draft.tags ?? "";
+        gameNotes.value = draft.notes ?? "";
+        visibilitySelect.value = ["private", "unlisted", "public"].includes(draft.visibility) ? draft.visibility : "private";
+        opponentVisibilitySelect.value = ["show", "hide"].includes(draft.opponentVisibility) ? draft.opponentVisibility : "show";
+        recorderColorSelect.value = ["black", "white"].includes(draft.recorderColor) ? draft.recorderColor : "";
+      }
+
+      function confirmArchiveDelete(label) {
+        return window.confirm(`Delete ${label} from this device? This cannot be undone.`)
+          && window.confirm(`Please confirm again: permanently delete ${label}?`);
+      }
+
+      function deleteArchiveScope(scope) {
+        const labels = {
+          all: "My Archive",
+          tournament: "Tournament Games",
+          other: "Other Games",
+        };
+        const records = getLocalArchiveRecords();
+        const nextRecords = scope === "all" ? [] : records.filter((record) => {
+          const group = record.group || (record.event ? "tournament" : "other");
+          return group !== scope;
+        });
+        const deletedCount = records.length - nextRecords.length;
+        if (deletedCount === 0) {
+          status.textContent = `${labels[scope]} is already empty.`;
+          showSaveToast("Nothing to delete");
+          return;
+        }
+        if (!confirmArchiveDelete(labels[scope])) return;
+        saveLocalArchiveRecords(nextRecords);
+        if (scope === "all" || !nextRecords.some((record) => record.localArchiveId === activeLocalArchiveId)) activeLocalArchiveId = null;
+        hasUnsavedArchiveChanges = false;
+        renderArchiveShell();
+        saveState({ pristine: true });
+        status.textContent = `${labels[scope]} deleted from this device.`;
+        showSaveToast(`${labels[scope]} deleted`);
+      }
+
+      function applyMode(mode = "light") {
+        const nextMode = ["light", "dark"].includes(mode) ? mode : "light";
+        document.body.dataset.mode = nextMode;
+        modeSelect.value = nextMode;
+      }
+
+      function applyTheme(theme = "walnut") {
+        const nextTheme = ["classic", "walnut", "bamboo"].includes(theme) ? theme : "walnut";
+        document.body.dataset.theme = nextTheme;
+        themeSelect.value = nextTheme;
+        board.draw();
+      }
+
+      function applyBoardDisplay(options = {}) {
+        const coordinates = options.coordinates === "off" ? "off" : "on";
+        const targetMarker = options.targetMarker === "off" ? "off" : "on";
+        board.setAttribute("coordinates", coordinates);
+        board.setAttribute("target-marker", targetMarker);
+        coordinatesSelect.value = coordinates;
+        targetMarkerSelect.value = targetMarker;
+        board.draw();
+      }
+
+      function markDraftSaved() {
+        const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        status.textContent = `Draft autosaved locally at ${time}`;
+      }
+
+      function showSaveToast(message) {
+        if (!saveToast) return;
+        saveToast.textContent = message;
+        saveToast.classList.add("show");
+        if (toastTimer) window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => {
+          saveToast.classList.remove("show");
+        }, 1800);
+      }
+
+      function saveState(options = {}) {
+        if (isRestoring) return;
+        writeMetadataSilently();
+        const saved = safeSetLocalStorage(
+          STORAGE_KEY,
+          JSON.stringify({
+            sgf: board.toSGF(),
+            metadata: board.getMetadata(),
+            identityDraft: getIdentityDraft(),
+            mode: document.body.dataset.mode || "light",
+            theme: document.body.dataset.theme || "walnut",
+            stoneStyle: board.getAttribute("stone-style") || "classic",
+            coordinates: board.getAttribute("coordinates") || "on",
+            targetMarker: board.getAttribute("target-marker") || "on",
+            activeLocalArchiveId,
+          })
+        );
+        if (!saved) return;
+        if (options.exported) {
+          hasUnsavedExportChanges = false;
+          status.textContent = "SGF saved. Local draft is still available for recovery.";
+        } else if (options.pristine) {
+          hasUnsavedArchiveChanges = false;
+          hasUnsavedExportChanges = false;
+        } else {
+          hasUnsavedExportChanges = true;
+          hasUnsavedArchiveChanges = true;
+          markDraftSaved();
+        }
+      }
+
+      function restoreState() {
+        publicReadOnly = false;
+        document.body.dataset.publicReadonly = "false";
+        document.body.dataset.publicContext = "false";
+        board.removeAttribute("disabled");
+        board.removeAttribute("readonly");
+        const raw = safeGetLocalStorage(STORAGE_KEY, "");
+        applyMode("light");
+        applyTheme("walnut");
+        applyStoneStyle("classic");
+        applyBoardDisplay({ coordinates: "on", targetMarker: "on" });
+        if (!raw) {
+          readMetadata();
+          applyIdentityDraft();
+          updateGameState(board.currentColor);
+          status.textContent = "Draft autosaves locally";
+          return;
+        }
+
+        try {
+          isRestoring = true;
+          const payload = JSON.parse(raw);
+          applyMode(payload.mode || "light");
+          applyTheme(payload.theme || "walnut");
+          applyStoneStyle(payload.stoneStyle || "classic");
+          applyBoardDisplay({ coordinates: payload.coordinates || "on", targetMarker: payload.targetMarker || "on" });
+          if (payload.sgf) board.loadSGF(payload.sgf);
+          if (payload.metadata) board.setMetadata(payload.metadata);
+          activeLocalArchiveId = payload.activeLocalArchiveId ?? null;
+          readMetadata();
+          applyIdentityDraft(payload.identityDraft);
+          updateGameState(board.currentColor);
+          hasUnsavedExportChanges = true;
+          hasUnsavedArchiveChanges = true;
+          status.textContent = "Previous session restored from local draft.";
+        } catch (_error) {
+          localStorage.removeItem(STORAGE_KEY);
+          readMetadata();
+          applyIdentityDraft();
+          updateGameState(board.currentColor);
+          status.textContent = "Draft autosaves locally";
+        } finally {
+          isRestoring = false;
+        }
+      }
+
+      function hasBoardDraft() {
+        const state = board.getNavigationState();
+        const metadata = board.getMetadata();
+        const draft = getIdentityDraft();
+        return (
+          state.mainLineLength > 0 ||
+          Object.values(metadata).some((value) => String(value ?? "").trim() && value !== "6.5" && value !== "Japanese") ||
+          Object.values(draft).some((value) => String(value ?? "").trim() && value !== "private" && value !== "show")
+        );
+      }
+
+      function newBoard() {
+        if (hasBoardDraft() && hasUnsavedArchiveChanges && !window.confirm("Start a new empty board? Current unsaved draft will be replaced.")) return;
+        loadedFileName = "";
+        loadedFileHandle = null;
+        activeLocalArchiveId = null;
+        activePublicGame = null;
+        publicReadOnly = false;
+        document.body.dataset.publicReadonly = "false";
+        document.body.dataset.publicContext = "false";
+        board.removeAttribute("disabled");
+        board.removeAttribute("readonly");
+        setupColorLock = null;
+        board.clear();
+        board.setMetadata({
+          blackName: "",
+          whiteName: "",
+          event: "",
+          gameName: "",
+          komi: "6.5",
+          result: "",
+          rules: "Japanese",
+          handicap: "",
+        });
+        readMetadata();
+        applyIdentityDraft();
+        updateGameState(board.currentColor);
+        setActiveView("board");
+        saveState({ pristine: true });
+        status.textContent = "New board ready.";
+      }
+
+      function downloadSGF(filename) {
+        const blob = new Blob([board.toSGF()], { type: "application/x-go-sgf;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function downloadPublicSGF() {
+        if (!activePublicGame) return;
+        downloadSGF(`${fileSlug(activePublicGame.title || activePublicGame.publicId || "public-game")}.sgf`);
+      }
+
+      async function copyActivePublicLink() {
+        if (!activePublicGame?.publicId) return;
+        const url = publicGameUrl(activePublicGame.publicId);
+        try {
+          await navigator.clipboard.writeText(url);
+          status.textContent = "Public link copied.";
+        } catch {
+          status.textContent = url;
+        }
+      }
+
+      async function writeSGFToHandle(handle) {
+        const writable = await handle.createWritable();
+        await writable.write(new Blob([board.toSGF()], { type: "application/x-go-sgf;charset=utf-8" }));
+        await writable.close();
+      }
+
+      async function saveSGF(options = {}) {
+        writeMetadata();
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+        const fallbackName = options.overwrite && loadedFileName ? loadedFileName : `goban-${stamp}.sgf`;
+
+        if (options.overwrite && loadedFileHandle?.createWritable) {
+          await writeSGFToHandle(loadedFileHandle);
+          saveState({ exported: true });
+          status.textContent = `${loadedFileName || "SGF"} overwritten after confirmation.`;
+          showSaveToast("SGF overwritten");
+          return;
+        }
+
+        if (!options.overwrite && window.showSaveFilePicker) {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: fallbackName,
+            types: [{ description: "SGF files", accept: { "application/x-go-sgf": [".sgf"] } }],
+          });
+          await writeSGFToHandle(handle);
+          loadedFileHandle = handle;
+          loadedFileName = handle.name || fallbackName;
+          saveState({ exported: true });
+          status.textContent = "SGF saved locally.";
+          showSaveToast("SGF saved");
+          return;
+        }
+
+        downloadSGF(fallbackName);
+        saveState({ exported: true });
+        status.textContent = options.overwrite
+          ? "Browser could not overwrite the original file directly; SGF downloaded with the same name instead."
+          : "SGF saved locally.";
+        showSaveToast(options.overwrite ? "SGF downloaded as replacement" : "SGF saved");
+      }
+
+      async function loadPublicArchive() {
+        try {
+          authSession = getAuthSession();
+          const response = await fetch("/api/archive/public-games", { headers: { accept: "application/json", ...authHeaders() } });
+          if (!response.ok) return;
+          const payload = await response.json();
+          publicServerGames = Array.isArray(payload.games) ? payload.games : [];
+          renderPublicArchive();
+        } catch {
+          publicServerGames = [];
+        }
+      }
+
+      async function loadPublicGameById(publicId) {
+        try {
+          const response = await fetch(publicGameApiUrl(publicId), {
+            headers: { accept: "application/json" },
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || !payload.game) {
+            status.textContent = "Public SGF record was not found.";
+            return;
+          }
+          openPublicGame(payload.game);
+        } catch {
+          status.textContent = "Could not load public SGF record.";
+        }
+      }
+
+      async function publishCurrentRecord() {
+        writeMetadata();
+        await publishArchiveGame(currentArchiveRecord());
+      }
+
+      function chooseOpponentPrivacy() {
+        return new Promise((resolve) => {
+          privacyChoiceResolver = resolve;
+          if (opponentPrivacyDialog?.showModal) {
+            opponentPrivacyDialog.showModal();
+            return;
+          }
+          resolve("show");
+        });
+      }
+
+      function resolveOpponentPrivacy(choice) {
+        const resolve = privacyChoiceResolver;
+        privacyChoiceResolver = null;
+        if (opponentPrivacyDialog?.open) opponentPrivacyDialog.close();
+        resolve?.(choice);
+      }
+
+      async function configurePublicSharing(record) {
+        if (!window.confirm("Publish this SGF to the Public Archive? Anyone with the link can view and download it.")) return null;
+        const privacyChoice = await chooseOpponentPrivacy();
+        if (privacyChoice === "cancel") {
+          status.textContent = "Publish cancelled.";
+          showSaveToast("Publish cancelled");
+          return null;
+        }
+        if (privacyChoice === "show") {
+          return { ...record, opponentVisibility: "show", recorderColor: "" };
+        }
+        return { ...record, opponentVisibility: "hidden", recorderColor: privacyChoice };
+      }
+
+      async function publishArchiveGame(record) {
+        if (!(await ensurePublicAuth(record))) return;
+        const signature = publicGameSignature(record);
+        const knownPublicId = getPublishedSignatures()[signature];
+        const publicDuplicate = publicServerGames.find((game) => publicGameSignature(game) === signature);
+        if (knownPublicId || publicDuplicate?.publicId || record.publicId) {
+          const publicId = knownPublicId || publicDuplicate?.publicId || record.publicId;
+          const url = publicId ? publicGameUrl(publicId) : "";
+          status.textContent = url ? `Already published: ${url}` : "This SGF is already published.";
+          showSaveToast("Already published");
+          if (url) {
+            try {
+              await navigator.clipboard.writeText(url);
+              status.textContent = "Already published. Public link copied.";
+            } catch {
+              status.textContent = `Already published: ${url}`;
+            }
+          }
+          return;
+        }
+        const sharingRecord = await configurePublicSharing(record);
+        if (!sharingRecord) return;
+        const publicRecord = maskedPublicRecord({ ...sharingRecord, visibility: "public" });
+        status.textContent = "Publishing SGF record...";
+        const response = await fetch("/api/archive/public-games", {
+          method: "POST",
+          headers: { "content-type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ game: publicRecord, ownerHandle: getPublicHandle() }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+        if (response.status === 409 && payload.game?.publicId) {
+          savePublishedSignature(signature, payload.game.publicId);
+          const url = publicGameUrl(payload.game.publicId);
+            status.textContent = `Already published: ${url}`;
+            showSaveToast("Already published");
+            try {
+              await navigator.clipboard.writeText(url);
+              status.textContent = "Already published. Public link copied.";
+            } catch {
+              status.textContent = `Already published: ${url}`;
+          }
+          return;
+        }
+        if (payload.game?.publicId) {
+          savePublishedSignature(signature, payload.game.publicId);
+          const url = publicGameUrl(payload.game.publicId);
+          status.textContent = payload.error || `Already published: ${url}`;
+          showSaveToast("Already published");
+          return;
+        }
+        status.textContent = payload.error || "Could not publish SGF record.";
+        return;
+      }
+        if (payload.game?.publicId) savePublishedSignature(signature, payload.game.publicId);
+        publicServerGames.unshift(payload.game);
+        if (record.localArchiveId) {
+          const records = getLocalArchiveRecords();
+          const index = records.findIndex((item) => item.localArchiveId === record.localArchiveId);
+          if (index >= 0) {
+            records[index] = { ...records[index], visibility: "public", publicId: payload.game.publicId };
+            saveLocalArchiveRecords(records);
+          }
+        }
+        renderPublicArchive();
+        renderMyArchive();
+        setActiveView("public");
+        const url = publicGameUrl(payload.game.publicId);
+        try {
+          await navigator.clipboard.writeText(url);
+          status.textContent = "Published. Public link copied. You can manage it after Google sign-in.";
+        } catch {
+          status.textContent = `Published: ${url}`;
+        }
+        showSaveToast("Published to Public Archive");
+      }
+
+      async function deletePublicGame(publicId) {
+        if (!(await ensurePublicAuth())) return;
+        if (!window.confirm("Unpublish this public SGF? The share link will stop working.")) return;
+        const response = await fetch(publicGameApiUrl(publicId), {
+          method: "DELETE",
+          headers: { "content-type": "application/json", ...authHeaders() },
+          body: JSON.stringify({}),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          status.textContent = payload.error || "Could not unpublish this SGF.";
+          return;
+        }
+        removePublishedSignatureByPublicId(publicId);
+        publicServerGames = publicServerGames.filter((game) => game.publicId !== publicId);
+        const records = getLocalArchiveRecords();
+        const index = records.findIndex((item) => item.publicId === publicId);
+        if (index >= 0) {
+          const { publicId: _publicId, ...rest } = records[index];
+          records[index] = { ...rest, visibility: "private" };
+          saveLocalArchiveRecords(records);
+        }
+        renderPublicArchive();
+        renderMyArchive();
+        status.textContent = "Public SGF unpublished.";
+        showSaveToast("Unpublished");
+      }
+
+      function setQuietStatus() {
+      }
+
+      function syncCommentEditor() {
+        const canComment = board.canUndo();
+        commentEditor.disabled = !canComment;
+        commentEditor.value = canComment ? board.getCurrentComment() : "";
+        commentEditor.placeholder = canComment ? "Add a note to the current move" : "Play or select a move to add a note";
+      }
+
+      function applyStoneStyle(style = "classic") {
+        const nextStyle = ["classic", "shell", "flat"].includes(style) ? style : "classic";
+        board.setAttribute("stone-style", nextStyle);
+        stoneStyleSelect.value = nextStyle;
+        board.draw();
+      }
+
+      async function loadSGFText(text, name = "", handle = null) {
+        loadedFileName = name;
+        loadedFileHandle = handle;
+        board.loadSGF(text);
+        readMetadata();
+        applyIdentityDraft();
+        updateGameState(board.currentColor);
+        saveState();
+        status.textContent = name ? `${name} loaded.` : "SGF loaded.";
+      }
+
+      async function openSGF() {
+        if (window.showOpenFilePicker) {
+          const [handle] = await window.showOpenFilePicker({
+            multiple: false,
+            types: [{ description: "SGF files", accept: { "application/x-go-sgf": [".sgf"] } }],
+          });
+          const file = await handle.getFile();
+          await loadSGFText(await file.text(), file.name, handle);
+          return;
+        }
+        sgfFile.click();
+      }
+
+      function setPlayButtonState(isPlaying = false) {
+        playButton.innerHTML = isPlaying
+          ? '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="5" width="3.8" height="14" rx="1"></rect><rect x="13.2" y="5" width="3.8" height="14" rx="1"></rect></svg>'
+          : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>';
+        playButton.setAttribute("aria-label", isPlaying ? "Pause" : "Play");
+        playButton.setAttribute("title", isPlaying ? "Pause autoplay" : "Autoplay");
+      }
+
+      function stopAutoplay() {
+        if (!autoplayTimer) return;
+        window.clearInterval(autoplayTimer);
+        autoplayTimer = null;
+        setPlayButtonState(false);
+      }
+
+      function startAutoplay() {
+        if (autoplayTimer || !board.canRedo()) return;
+        setPlayButtonState(true);
+        autoplayTimer = window.setInterval(() => {
+          if (!board.stepForward(1)) {
+            stopAutoplay();
+            return;
+          }
+          updateGameState(board.currentColor);
+          setQuietStatus();
+          saveState();
+        }, 1000);
+      }
+
+      applyI18n();
+      setPlayButtonState(false);
+      document.body.dataset.activeView = "board";
+
+      colorButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          setupColorLock = null;
+          selectColor(button.dataset.color);
+          updateLockButtons();
+        });
+      });
+
+      lockButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          setupColorLock = setupColorLock === button.dataset.lockColor ? null : button.dataset.lockColor;
+          updateGameState(getNaturalNextColor());
+          saveState();
+        });
+      });
+
+      tabButtons.forEach((button) => {
+        button.addEventListener("click", () => setActiveView(button.dataset.tab));
+      });
+
+      archiveViewToggle.addEventListener("click", () => {
+        archiveViewMode = archiveViewMode === "list" ? "thumbs" : "list";
+        archiveViewToggle.setAttribute("aria-pressed", String(archiveViewMode === "thumbs"));
+        renderMyArchive();
+      });
+
+      openButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          openSGF().catch(() => {});
+        });
+      });
+      newBoardButton.addEventListener("click", newBoard);
+      saveSgfButton.addEventListener("click", () => {
+        saveSGF().catch(() => {});
+      });
+      publicDownloadButton.addEventListener("click", downloadPublicSGF);
+      publicCopyLinkButton.addEventListener("click", () => {
+        copyActivePublicLink().catch(() => {});
+      });
+      saveRecordButton.addEventListener("click", () => setActiveView("info"));
+      saveRecordToArchiveButton.addEventListener("click", saveCurrentRecordToArchive);
+      infoRecordButton.addEventListener("click", () => {
+        renderSummary();
+        setActiveView("summary");
+      });
+      publishArchiveButton.addEventListener("click", () => {
+        publishCurrentRecord().catch(() => {
+          status.textContent = "Could not publish SGF record.";
+        });
+      });
+      saveAsButton.addEventListener("click", () => {
+        saveSGF().catch(() => {});
+      });
+      overwriteButton.addEventListener("click", () => {
+        if (activeLocalArchiveId) {
+          if (window.confirm("Overwrite this My Archive record? This updates the saved archive copy.")) {
+            saveCurrentRecordToArchive({ overwrite: true });
+          }
+          return;
+        }
+        if (loadedFileHandle?.createWritable) {
+          if (window.confirm(`Overwrite ${loadedFileName || "this SGF"}? This replaces the existing SGF file. Your local recovery draft will remain available.`)) {
+            saveSGF({ overwrite: true }).catch(() => {});
+          }
+          return;
+        }
+        if (loadedFileName) {
+          status.textContent = "This browser cannot overwrite that original SGF directly. Use Save as SGF to download a new copy.";
+          showSaveToast("Use Save as SGF");
+          return;
+        }
+        status.textContent = "No saved archive record or original SGF file to overwrite yet.";
+        showSaveToast("Nothing to overwrite yet");
+      });
+      navButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const action = button.dataset.nav;
+          let moved = false;
+          if (action === "start") moved = board.jumpToStart();
+          else if (action === "end") moved = board.jumpToEnd();
+          else moved = board.jumpBy(Number(action));
+
+          if (moved) {
+            updateGameState(board.currentColor);
+            setQuietStatus();
+            saveState();
+          }
+        });
+      });
+      playButton.addEventListener("click", () => {
+        if (autoplayTimer) {
+          stopAutoplay();
+        } else {
+          startAutoplay();
+        }
+      });
+
+      function handlePass() {
+        board.playPass();
+        updateGameState(board.currentColor);
+        saveState();
+      }
+
+      passButton.addEventListener("pointerup", (event) => {
+        event.preventDefault();
+        lastPassPointerAt = performance.now();
+        handlePass();
+      });
+      passButton.addEventListener("click", () => {
+        if (performance.now() - lastPassPointerAt < 500) return;
+        handlePass();
+      });
+      [gameName, blackName, whiteName, eventName, resultWinner, resultMethod, resultDetail, komiValue, rulesSelect].forEach((input) => {
+        input.addEventListener("input", writeMetadata);
+        input.addEventListener("change", writeMetadata);
+      });
+      resultWinner.addEventListener("change", syncResultControls);
+      resultMethod.addEventListener("change", syncResultControls);
+      resultDetail.addEventListener("input", () => {
+        resultDetail.value = sanitizePointMargin(resultDetail.value);
+      });
+      resultDetail.addEventListener("blur", () => {
+        commitPointMargin();
+        writeMetadata();
+      });
+      resultDetailToggle.addEventListener("click", toggleResultDetailMenu);
+      resultDetailMenu.addEventListener("click", (event) => {
+        const option = event.target.closest("[data-result-detail]");
+        if (!option) return;
+        chooseResultDetail(option.dataset.resultDetail);
+      });
+      document.addEventListener("click", (event) => {
+        if (resultDetailPicker.contains(event.target)) return;
+        closeResultDetailMenu();
+      });
+      [roundName, gameDate, recorderNickname, gameTags, gameNotes, visibilitySelect, opponentVisibilitySelect, recorderColorSelect].forEach((input) => {
+        input.addEventListener("input", () => {
+          renderArchiveShell();
+          saveState();
+        });
+        input.addEventListener("change", () => {
+          renderArchiveShell();
+          saveState();
+        });
+      });
+      [publicSearch].forEach((input) => {
+        input.addEventListener("input", renderPublicArchive);
+        input.addEventListener("change", renderPublicArchive);
+      });
+      modeSelect.addEventListener("change", () => {
+        applyMode(modeSelect.value);
+        saveState();
+      });
+      themeSelect.addEventListener("change", () => {
+        applyTheme(themeSelect.value);
+        saveState();
+      });
+      stoneStyleSelect.addEventListener("change", () => {
+        applyStoneStyle(stoneStyleSelect.value);
+        saveState();
+      });
+      coordinatesSelect.addEventListener("change", () => {
+        applyBoardDisplay({ coordinates: coordinatesSelect.value, targetMarker: targetMarkerSelect.value });
+        saveState();
+      });
+      targetMarkerSelect.addEventListener("change", () => {
+        applyBoardDisplay({ coordinates: coordinatesSelect.value, targetMarker: targetMarkerSelect.value });
+        saveState();
+      });
+      cancelSignInButton.addEventListener("click", () => {
+        pendingPublishRecord = null;
+        signInDialog.close();
+      });
+      googleSignInButton.addEventListener("click", () => {
+        startGoogleSignIn().catch(() => {
+          status.textContent = "Could not start Google sign-in.";
+        });
+      });
+      hideAsBlackButton.addEventListener("click", () => resolveOpponentPrivacy("black"));
+      hideAsWhiteButton.addEventListener("click", () => resolveOpponentPrivacy("white"));
+      showOpponentButton.addEventListener("click", () => resolveOpponentPrivacy("show"));
+      cancelPrivacyButton.addEventListener("click", () => resolveOpponentPrivacy("cancel"));
+      opponentPrivacyDialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        resolveOpponentPrivacy("cancel");
+      });
+      deleteTournamentArchiveButton.addEventListener("click", () => deleteArchiveScope("tournament"));
+      deleteOtherArchiveButton.addEventListener("click", () => deleteArchiveScope("other"));
+      deleteAllArchiveButton.addEventListener("click", () => deleteArchiveScope("all"));
+      sgfFile.addEventListener("change", async () => {
+        const file = sgfFile.files?.[0];
+        if (!file) return;
+
+        try {
+          await loadSGFText(await file.text(), file.name, null);
+        } catch (_error) {
+          status.textContent = "Could not load SGF. Check the file format.";
+        } finally {
+          sgfFile.value = "";
+        }
+      });
+
+      board.addEventListener("goban-update", (event) => {
+        const { x, y, color, captured, nextColor, prisoners } = event.detail;
+        updateGameState(nextColor, prisoners);
+        setQuietStatus();
+        if (!publicReadOnly) saveState();
+      });
+
+      board.addEventListener("goban-illegal", (event) => {
+        if (event.detail.reason === "ko") {
+          status.textContent = "Ko: play elsewhere before recapturing.";
+          return;
+        }
+
+        status.textContent = "Illegal move: that group has no liberties.";
+      });
+
+      board.addEventListener("goban-undo", (event) => {
+        updateGameState(event.detail.nextColor, event.detail.prisoners);
+        if (!publicReadOnly) saveState();
+      });
+
+      board.addEventListener("goban-navigate", (event) => {
+        updateGameState(event.detail.nextColor, event.detail.prisoners);
+        if (!publicReadOnly) saveState();
+      });
+
+      board.addEventListener("goban-variation", (event) => {
+        updateGameState(event.detail.nextColor, event.detail.prisoners);
+        if (!publicReadOnly) saveState();
+      });
+
+      board.addEventListener("goban-load", (event) => {
+        readMetadata();
+        updateGameState(event.detail.nextColor, event.detail.prisoners);
+        if (!publicReadOnly) saveState();
+      });
+
+      commentEditor.addEventListener("input", () => {
+        if (board.setCurrentComment(commentEditor.value)) {
+          renderVariationTree();
+          saveState();
+        }
+      });
+
+      window.addEventListener("beforeunload", (event) => {
+        if (!hasUnsavedExportChanges) return;
+        event.preventDefault();
+        event.returnValue = "";
+      });
+
+      restoreState();
+      consumeAuthCallback();
+      loadAuthUser().then(() => loadPublicArchive()).catch(() => loadPublicArchive());
+      setActiveView("board");
+      const initialPublicId = publicIdFromLocation();
+      if (initialPublicId) loadPublicGameById(initialPublicId);
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>

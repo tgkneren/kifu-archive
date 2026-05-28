@@ -1,0 +1,11 @@
+.env
+.env.*
+archive-data.json
+archive-data.tmp.json
+*.log
+cloudflared.exe
+localtunnel*
+server-*.log
+server-live*.log
+start-4173.ps1
+start-goban-server.cmd

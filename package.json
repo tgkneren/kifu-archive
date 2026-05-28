@@ -1,0 +1,10 @@
+{
+  "name": "kifu-archive-pwa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test goban-board.test.mjs"
+  }
+}
