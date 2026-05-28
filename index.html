@@ -3967,8 +3967,8 @@
         showSaveToast(`${labels[scope]} deleted`);
       }
 
-      function applyMode(mode = "light") {
-        const nextMode = ["light", "dark"].includes(mode) ? mode : "light";
+      function applyMode(mode = "dark") {
+        const nextMode = ["light", "dark"].includes(mode) ? mode : "dark";
         document.body.dataset.mode = nextMode;
         modeSelect.value = nextMode;
       }
@@ -4014,7 +4014,7 @@
             sgf: board.toSGF(),
             metadata: board.getMetadata(),
             identityDraft: getIdentityDraft(),
-            mode: document.body.dataset.mode || "light",
+            mode: document.body.dataset.mode || "dark",
             theme: document.body.dataset.theme || "walnut",
             stoneStyle: board.getAttribute("stone-style") || "classic",
             coordinates: board.getAttribute("coordinates") || "on",
@@ -4043,7 +4043,7 @@
         board.removeAttribute("disabled");
         board.removeAttribute("readonly");
         const raw = safeGetLocalStorage(STORAGE_KEY, "");
-        applyMode("light");
+        applyMode("dark");
         applyTheme("walnut");
         applyStoneStyle("classic");
         applyBoardDisplay({ coordinates: "on", targetMarker: "on" });
@@ -4058,7 +4058,7 @@
         try {
           isRestoring = true;
           const payload = JSON.parse(raw);
-          applyMode(payload.mode || "light");
+          applyMode(payload.mode || "dark");
           applyTheme(payload.theme || "walnut");
           applyStoneStyle(payload.stoneStyle || "classic");
           applyBoardDisplay({ coordinates: payload.coordinates || "on", targetMarker: payload.targetMarker || "on" });
