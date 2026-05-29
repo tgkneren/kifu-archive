@@ -98,9 +98,58 @@
         font-weight: 800;
       }
 
+      .install-action {
+        width: auto;
+        min-width: 92px;
+        grid-auto-flow: column;
+        gap: 7px;
+        padding: 0 12px;
+        border-color: rgb(216 167 93 / 72%);
+        background: #1d2521;
+        color: #fffaf1;
+        font-size: 0.82rem;
+        font-weight: 850;
+      }
+
       .new-board-action svg {
         width: 16px;
         height: 16px;
+      }
+
+      .install-action svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .install-prompt {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid rgb(216 167 93 / 24%);
+        border-radius: 12px;
+        background: rgb(236 196 126 / 10%);
+      }
+
+      body[data-installed="true"] .install-prompt {
+        display: none;
+      }
+
+      .install-prompt strong {
+        display: block;
+        color: #f6f3ee;
+        font-size: 0.86rem;
+        line-height: 1.2;
+      }
+
+      .install-prompt span {
+        display: block;
+        margin-top: 2px;
+        color: rgb(235 230 221 / 62%);
+        font-size: 0.72rem;
+        font-weight: 650;
+        line-height: 1.25;
       }
 
       .brand {
@@ -1058,6 +1107,14 @@
 
       .install-steps li + li {
         margin-top: 5px;
+      }
+
+      .install-dialog-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .install-dialog-actions button {
+        width: 100%;
       }
 
       .record-card {
@@ -2175,13 +2232,6 @@
             </svg>
             <span>New</span>
           </button>
-          <button type="button" class="icon-action install-action" id="installAppButton" title="Install app" aria-label="Install app">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 3v11"></path>
-              <path d="m7 9 5 5 5-5"></path>
-              <path d="M5 19h14"></path>
-            </svg>
-          </button>
           <button type="button" class="icon-action" data-open title="Upload SGF" aria-label="Upload SGF">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 3v12"></path>
@@ -2205,6 +2255,21 @@
           </button>
         </div>
       </header>
+
+      <section class="install-prompt" aria-label="Install KifuArchive">
+        <div>
+          <strong>Install KifuArchive</strong>
+          <span>Use it from your home screen.</span>
+        </div>
+        <button type="button" class="icon-action install-action" id="installAppButton" title="Install app" aria-label="Install app">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v11"></path>
+            <path d="m7 9 5 5 5-5"></path>
+            <path d="M5 19h14"></path>
+          </svg>
+          <span>Install</span>
+        </button>
+      </section>
 
       <section class="board-zone app-view" data-view="board" aria-label="Board">
         <div class="public-share-panel" id="publicSharePanel" aria-live="polite">
@@ -2542,9 +2607,9 @@
           <li>WhatsApp / Instagram: open the link in Chrome first, then install from Chrome.</li>
           <li>iPhone Safari: use Share, then Add to Home Screen.</li>
         </ol>
-        <div class="identity-actions">
+        <div class="identity-actions install-dialog-actions">
           <button type="button" class="secondary-action" id="closeInstallHelpButton">Close</button>
-          <button type="button" class="primary-action" id="nativeInstallButton">Try install</button>
+          <button type="button" class="primary-action" id="nativeInstallButton">Install app</button>
         </div>
       </form>
     </dialog>
@@ -2659,9 +2724,14 @@
       let privacyChoiceResolver = null;
       let deferredInstallPrompt = null;
 
+      function isStandaloneDisplay() {
+        return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+      }
+
       function syncInstallHelp() {
         const canInstall = Boolean(deferredInstallPrompt);
         nativeInstallButton.disabled = !canInstall;
+        document.body.dataset.installed = String(isStandaloneDisplay());
         installHelpIntro.textContent = canInstall
           ? "KifuArchive is ready to install on this browser."
           : "Install support depends on the browser. Open KifuArchive in Chrome for the most reliable install option.";
@@ -4763,11 +4833,13 @@
 
       window.addEventListener("appinstalled", () => {
         deferredInstallPrompt = null;
+        document.body.dataset.installed = "true";
         syncInstallHelp();
         status.textContent = "KifuArchive installed.";
       });
 
       restoreState();
+      syncInstallHelp();
       consumeAuthCallback();
       loadAuthUser().then(() => loadPublicArchive()).catch(() => loadPublicArchive());
       setActiveView("board");
