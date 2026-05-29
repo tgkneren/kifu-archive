@@ -1,10 +1,12 @@
-const CACHE_NAME = "goban-pwa-v79";
+const CACHE_NAME = "goban-pwa-v80";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./goban-board.js?v=core-20260525-4",
   "./manifest.webmanifest",
   "./app-icon.svg",
+  "./app-icon-192.png",
+  "./app-icon-512.png",
 ];
 
 self.addEventListener("install", (event) => {

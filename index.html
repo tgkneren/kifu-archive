@@ -86,6 +86,14 @@
         fill: none;
       }
 
+      .install-action {
+        display: none;
+      }
+
+      body[data-installable="true"] .install-action {
+        display: inline-grid;
+      }
+
       .new-board-action {
         width: auto;
         min-width: 72px;
@@ -2162,6 +2170,13 @@
             </svg>
             <span>New</span>
           </button>
+          <button type="button" class="icon-action install-action" id="installAppButton" title="Install app" aria-label="Install app">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v11"></path>
+              <path d="m7 9 5 5 5-5"></path>
+              <path d="M5 19h14"></path>
+            </svg>
+          </button>
           <button type="button" class="icon-action" data-open title="Upload SGF" aria-label="Upload SGF">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 3v12"></path>
@@ -2526,6 +2541,7 @@
       const passButton = document.querySelector("[data-pass]");
       const moveCounter = document.querySelector("#moveCounter");
       const newBoardButton = document.querySelector("#newBoardButton");
+      const installAppButton = document.querySelector("#installAppButton");
       const openButtons = document.querySelectorAll("[data-open]");
       const saveSgfButton = document.querySelector("[data-save-sgf]");
       const saveRecordButton = document.querySelector("[data-save-record]");
@@ -2616,6 +2632,7 @@
       let authUser = null;
       let pendingPublishRecord = null;
       let privacyChoiceResolver = null;
+      let deferredInstallPrompt = null;
 
       const I18N = {
         en: {
@@ -4470,6 +4487,16 @@
         });
       });
       newBoardButton.addEventListener("click", newBoard);
+      installAppButton.addEventListener("click", async () => {
+        if (!deferredInstallPrompt) {
+          status.textContent = "Open KifuArchive in Chrome to install it from the browser menu.";
+          return;
+        }
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice.catch(() => null);
+        deferredInstallPrompt = null;
+        document.body.dataset.installable = "false";
+      });
       saveSgfButton.addEventListener("click", () => {
         saveSGF().catch(() => {});
       });
@@ -4688,6 +4715,18 @@
         if (!hasUnsavedExportChanges) return;
         event.preventDefault();
         event.returnValue = "";
+      });
+
+      window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        document.body.dataset.installable = "true";
+      });
+
+      window.addEventListener("appinstalled", () => {
+        deferredInstallPrompt = null;
+        document.body.dataset.installable = "false";
+        status.textContent = "KifuArchive installed.";
       });
 
       restoreState();
