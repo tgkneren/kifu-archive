@@ -1065,8 +1065,7 @@
       }
 
       .handle-field {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
+        display: flex;
         align-items: center;
         min-height: 40px;
         border: 1px solid #d1c4ac;
@@ -1077,17 +1076,20 @@
       }
 
       .handle-prefix {
-        padding-left: 10px;
+        flex: 0 0 auto;
+        padding-left: 12px;
         color: rgb(58 63 55 / 78%);
         font-weight: 850;
+        line-height: 1;
       }
 
       .handle-field input {
+        flex: 1 1 auto;
         min-height: 38px;
         border: 0;
         border-radius: 0;
         background: transparent;
-        padding-left: 2px;
+        padding: 0 10px 0 3px;
       }
 
       .choice-actions {
@@ -2573,7 +2575,7 @@
           Public archive name
           <span class="handle-field">
             <span class="handle-prefix">@</span>
-            <input id="publicHandleInput" autocomplete="nickname" placeholder="archive-name" />
+            <input id="publicHandleInput" autocomplete="nickname" placeholder="" />
           </span>
         </label>
         <div class="identity-actions">
@@ -2895,7 +2897,7 @@
 
       function showSignInDialog(record = null) {
         pendingPublishRecord = record;
-        publicHandleInput.value = publicHandleName(getPublicHandle() || recorderNickname.value.trim());
+        publicHandleInput.value = publicHandleName(getPublicHandle());
         if (signInDialog?.showModal) signInDialog.showModal();
       }
 
