@@ -1,7 +1,7 @@
 {
-  "name": "Goban",
-  "short_name": "Goban",
-  "description": "A focused SGF editor and Go review board.",
+  "name": "KifuArchive",
+  "short_name": "KifuArchive",
+  "description": "A focused SGF editor, Go review board, and public kifu archive.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
