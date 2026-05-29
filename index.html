@@ -86,14 +86,6 @@
         fill: none;
       }
 
-      .install-action {
-        display: none;
-      }
-
-      body[data-installable="true"] .install-action {
-        display: inline-grid;
-      }
-
       .new-board-action {
         width: auto;
         min-width: 72px;
@@ -1053,6 +1045,19 @@
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
+      }
+
+      .install-steps {
+        margin: 0;
+        padding-left: 1.2rem;
+        color: rgb(58 63 55 / 76%);
+        font-size: 0.82rem;
+        font-weight: 650;
+        line-height: 1.45;
+      }
+
+      .install-steps li + li {
+        margin-top: 5px;
       }
 
       .record-card {
@@ -2528,6 +2533,22 @@
       </form>
     </dialog>
 
+    <dialog class="identity-dialog" id="installHelpDialog">
+      <form method="dialog" class="identity-card">
+        <h2>Install KifuArchive</h2>
+        <p id="installHelpIntro">Install support depends on the browser. Open KifuArchive in Chrome for the most reliable install option.</p>
+        <ol class="install-steps">
+          <li>Android Chrome: open the three-dot menu and choose Install app or Add to Home screen.</li>
+          <li>WhatsApp / Instagram: open the link in Chrome first, then install from Chrome.</li>
+          <li>iPhone Safari: use Share, then Add to Home Screen.</li>
+        </ol>
+        <div class="identity-actions">
+          <button type="button" class="secondary-action" id="closeInstallHelpButton">Close</button>
+          <button type="button" class="primary-action" id="nativeInstallButton">Try install</button>
+        </div>
+      </form>
+    </dialog>
+
     <script type="module">
       const board = document.querySelector("#board");
       const status = document.querySelector("#autosaveStatus");
@@ -2595,6 +2616,10 @@
       const deleteOtherArchiveButton = document.querySelector("#deleteOtherArchiveButton");
       const deleteAllArchiveButton = document.querySelector("#deleteAllArchiveButton");
       const signInDialog = document.querySelector("#signInDialog");
+      const installHelpDialog = document.querySelector("#installHelpDialog");
+      const closeInstallHelpButton = document.querySelector("#closeInstallHelpButton");
+      const nativeInstallButton = document.querySelector("#nativeInstallButton");
+      const installHelpIntro = document.querySelector("#installHelpIntro");
       const publicHandleInput = document.querySelector("#publicHandleInput");
       const cancelSignInButton = document.querySelector("#cancelSignInButton");
       const googleSignInButton = document.querySelector("#googleSignInButton");
@@ -2633,6 +2658,14 @@
       let pendingPublishRecord = null;
       let privacyChoiceResolver = null;
       let deferredInstallPrompt = null;
+
+      function syncInstallHelp() {
+        const canInstall = Boolean(deferredInstallPrompt);
+        nativeInstallButton.disabled = !canInstall;
+        installHelpIntro.textContent = canInstall
+          ? "KifuArchive is ready to install on this browser."
+          : "Install support depends on the browser. Open KifuArchive in Chrome for the most reliable install option.";
+      }
 
       const I18N = {
         en: {
@@ -4488,14 +4521,19 @@
       });
       newBoardButton.addEventListener("click", newBoard);
       installAppButton.addEventListener("click", async () => {
-        if (!deferredInstallPrompt) {
-          status.textContent = "Open KifuArchive in Chrome to install it from the browser menu.";
-          return;
-        }
+        syncInstallHelp();
+        if (installHelpDialog?.showModal) installHelpDialog.showModal();
+      });
+      closeInstallHelpButton.addEventListener("click", () => {
+        installHelpDialog.close();
+      });
+      nativeInstallButton.addEventListener("click", async () => {
+        if (!deferredInstallPrompt) return;
         deferredInstallPrompt.prompt();
         await deferredInstallPrompt.userChoice.catch(() => null);
         deferredInstallPrompt = null;
-        document.body.dataset.installable = "false";
+        syncInstallHelp();
+        installHelpDialog.close();
       });
       saveSgfButton.addEventListener("click", () => {
         saveSGF().catch(() => {});
@@ -4720,12 +4758,12 @@
       window.addEventListener("beforeinstallprompt", (event) => {
         event.preventDefault();
         deferredInstallPrompt = event;
-        document.body.dataset.installable = "true";
+        syncInstallHelp();
       });
 
       window.addEventListener("appinstalled", () => {
         deferredInstallPrompt = null;
-        document.body.dataset.installable = "false";
+        syncInstallHelp();
         status.textContent = "KifuArchive installed.";
       });
 
