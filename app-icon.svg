@@ -1,63 +1,50 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="KifuArchive app icon">
   <defs>
-    <linearGradient id="bg" x1="84" y1="42" x2="432" y2="470" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#171d24"/>
-      <stop offset="1" stop-color="#080d12"/>
+    <linearGradient id="wood" x1="52" y1="24" x2="468" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e5a45a"/>
+      <stop offset=".46" stop-color="#b96e31"/>
+      <stop offset="1" stop-color="#6e3719"/>
     </linearGradient>
-    <linearGradient id="board" x1="132" y1="112" x2="386" y2="400" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#d7a46a"/>
-      <stop offset=".46" stop-color="#b7783f"/>
-      <stop offset="1" stop-color="#865026"/>
-    </linearGradient>
-    <linearGradient id="edge" x1="120" y1="104" x2="396" y2="408" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#f0c086"/>
-      <stop offset=".5" stop-color="#7c441e"/>
-      <stop offset="1" stop-color="#3c2315"/>
+    <linearGradient id="edge" x1="40" y1="24" x2="484" y2="496" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f4c27f"/>
+      <stop offset=".5" stop-color="#9b5423"/>
+      <stop offset="1" stop-color="#35190b"/>
     </linearGradient>
     <radialGradient id="blackStone" cx="35%" cy="25%" r="72%">
-      <stop stop-color="#555958"/>
-      <stop offset=".42" stop-color="#191b1b"/>
-      <stop offset="1" stop-color="#030404"/>
+      <stop stop-color="#626666"/>
+      <stop offset=".42" stop-color="#181a1a"/>
+      <stop offset="1" stop-color="#020303"/>
     </radialGradient>
     <radialGradient id="whiteStone" cx="34%" cy="25%" r="76%">
       <stop stop-color="#ffffff"/>
-      <stop offset=".54" stop-color="#eee7da"/>
+      <stop offset=".54" stop-color="#f0e8da"/>
       <stop offset="1" stop-color="#b8ad9d"/>
     </radialGradient>
-    <filter id="boardShadow" x="-22%" y="-22%" width="144%" height="150%">
-      <feDropShadow dx="0" dy="20" stdDeviation="16" flood-color="#020406" flood-opacity=".5"/>
-    </filter>
     <filter id="stoneShadow" x="-38%" y="-38%" width="176%" height="180%">
-      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#0a0705" flood-opacity=".42"/>
+      <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#120905" flood-opacity=".38"/>
     </filter>
     <clipPath id="boardClip">
-      <rect x="118" y="118" width="276" height="276" rx="48"/>
+      <rect x="54" y="54" width="404" height="404" rx="78"/>
     </clipPath>
   </defs>
 
-  <rect width="512" height="512" fill="url(#bg)"/>
-  <circle cx="256" cy="256" r="222" fill="#0b141d" opacity=".72"/>
-
-  <g filter="url(#boardShadow)">
-    <rect x="112" y="112" width="288" height="288" rx="54" fill="url(#edge)"/>
-    <rect x="124" y="124" width="264" height="264" rx="42" fill="url(#board)"/>
-    <g clip-path="url(#boardClip)">
-      <g opacity=".2" stroke-linecap="round">
-        <path d="M144 122v266M162 122v266M190 122v266M232 122v266M274 122v266M318 122v266M350 122v266M372 122v266" stroke="#f4c889" stroke-width="5"/>
-        <path d="M151 120v270M172 120v270M207 120v270M249 120v270M289 120v270M333 120v270M361 120v270" stroke="#4f2b17" stroke-width="4"/>
-      </g>
-      <g stroke="#17110c" stroke-width="5.5" stroke-linecap="round" opacity=".74">
-        <path d="M160 160h192M160 208h192M160 256h192M160 304h192M160 352h192"/>
-        <path d="M160 160v192M208 160v192M256 160v192M304 160v192M352 160v192"/>
-      </g>
-      <circle cx="256" cy="256" r="5" fill="#17110c" opacity=".78"/>
+  <rect width="512" height="512" rx="88" fill="url(#edge)"/>
+  <rect x="30" y="30" width="452" height="452" rx="96" fill="url(#wood)"/>
+  <g clip-path="url(#boardClip)">
+    <g opacity=".22" stroke-linecap="round">
+      <path d="M78 42v430M106 42v430M142 42v430M188 42v430M236 42v430M284 42v430M330 42v430M370 42v430M414 42v430M448 42v430" stroke="#f8cb88" stroke-width="7"/>
+      <path d="M92 38v436M126 38v436M168 38v436M212 38v436M260 38v436M306 38v436M350 38v436M394 38v436M434 38v436" stroke="#643214" stroke-width="5"/>
     </g>
+    <g stroke="#22140a" stroke-width="8" stroke-linecap="round" opacity=".78">
+      <path d="M112 112h288M112 184h288M112 256h288M112 328h288M112 400h288"/>
+      <path d="M112 112v288M184 112v288M256 112v288M328 112v288M400 112v288"/>
+    </g>
+    <circle cx="256" cy="256" r="7" fill="#22140a" opacity=".82"/>
   </g>
 
   <g filter="url(#stoneShadow)">
-    <circle cx="304" cy="208" r="27" fill="url(#blackStone)"/>
-    <circle cx="208" cy="256" r="27" fill="url(#blackStone)"/>
-    <circle cx="256" cy="304" r="27" fill="url(#whiteStone)"/>
+    <circle cx="328" cy="184" r="36" fill="url(#blackStone)"/>
+    <circle cx="184" cy="256" r="36" fill="url(#blackStone)"/>
+    <circle cx="256" cy="328" r="36" fill="url(#whiteStone)"/>
   </g>
-
 </svg>
