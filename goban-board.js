@@ -40,7 +40,7 @@ class GobanBoard extends HTMLElement {
     this.activePointerId = null;
     this.pointerStart = null;
     this.isPanning = false;
-    this.lastTap = { time: 0, point: null };
+    this.lastTap = { time: 0, point: null, clientX: 0, clientY: 0 };
     this.skipNextPlacement = false;
     this.zoom = { scale: 1, center: { x: 9, y: 9 }, offsetX: 0, offsetY: 0 };
     this.pixelRatio = 1;
@@ -765,15 +765,18 @@ class GobanBoard extends HTMLElement {
     this.hoverPoint = point;
 
     const now = performance.now();
-    if (point && this.lastTap.point && now - this.lastTap.time < 320 && this.distance(point, this.lastTap.point) <= 1) {
-      this.toggleZoom(point);
+    const isQuickTap = now - this.lastTap.time < 320;
+    const isSamePointTap = point && this.lastTap.point && this.distance(point, this.lastTap.point) <= 1;
+    const isSameCanvasTap = Math.hypot(event.clientX - this.lastTap.clientX, event.clientY - this.lastTap.clientY) <= 48;
+    if (isQuickTap && (isSamePointTap || (this.zoom.scale !== 1 && isSameCanvasTap))) {
+      this.toggleZoom(point ?? this.zoom.center);
       this.skipNextPlacement = true;
-      this.lastTap = { time: 0, point: null };
+      this.lastTap = { time: 0, point: null, clientX: 0, clientY: 0 };
       this.draw();
       return;
     }
 
-    this.lastTap = { time: now, point };
+    this.lastTap = { time: now, point, clientX: event.clientX, clientY: event.clientY };
     this.skipNextPlacement = false;
     this.draw();
   }
@@ -1311,7 +1314,7 @@ class GobanBoard extends HTMLElement {
     let y = (event.clientY - rect.top) * this.pixelRatio;
     const { margin, gap } = this.metrics();
     if (this.shouldOffsetTouchTarget(event)) {
-      y -= gap * 3 * this.zoom.scale;
+      y -= gap * 2 * this.zoom.scale;
     }
     if (this.zoom.scale !== 1) {
       const canvasCenter = this.metrics().size / 2;

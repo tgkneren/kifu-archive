@@ -1,11 +1,11 @@
-const CACHE_NAME = "goban-pwa-v88";
+const CACHE_NAME = "goban-pwa-v89";
 const SHARE_DB = "kifuarchive-share-target-v1";
 const SHARE_STORE = "files";
 const SHARE_KEY = "latest";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./goban-board.js?v=core-20260525-4",
+  "./goban-board.js?v=core-20260530-1",
   "./manifest.webmanifest",
   "./app-icon.svg",
   "./app-icon-192.png",
