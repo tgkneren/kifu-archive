@@ -1,4 +1,4 @@
-const CACHE_NAME = "goban-pwa-v86";
+const CACHE_NAME = "goban-pwa-v87";
 const SHARE_DB = "kifuarchive-share-target-v1";
 const SHARE_STORE = "files";
 const SHARE_KEY = "latest";

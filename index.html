@@ -2473,6 +2473,14 @@
               <span><strong>Restore backup</strong><span>Import a KifuArchive backup file</span></span>
               <span class="action-mark">IN</span>
             </button>
+            <button type="button" class="file-action secondary-action" id="cloudBackupButton">
+              <span><strong>Cloud backup</strong><span>Save My Archive to your Google account</span></span>
+              <span class="action-mark">UP</span>
+            </button>
+            <button type="button" class="file-action secondary-action" id="cloudRestoreButton">
+              <span><strong>Restore cloud</strong><span>Restore My Archive from your Google account</span></span>
+              <span class="action-mark">DOWN</span>
+            </button>
           </div>
           <div class="archive-toolbar">
             <p class="section-kicker">Local archive preview</p>
@@ -2647,6 +2655,8 @@
       const publishArchiveButton = document.querySelector("#publishArchiveButton");
       const backupArchiveButton = document.querySelector("#backupArchiveButton");
       const restoreArchiveButton = document.querySelector("#restoreArchiveButton");
+      const cloudBackupButton = document.querySelector("#cloudBackupButton");
+      const cloudRestoreButton = document.querySelector("#cloudRestoreButton");
       const saveRecordToArchiveButton = document.querySelector("#saveRecordToArchiveButton");
       const saveAsButton = document.querySelector("#saveAsButton");
       const overwriteButton = document.querySelector("#overwriteButton");
@@ -2968,6 +2978,13 @@
         return false;
       }
 
+      async function ensureGoogleAuthForArchive() {
+        const user = await loadAuthUser();
+        if (user) return true;
+        showSignInDialog(null, "manage");
+        return false;
+      }
+
       function publicGameSignature(game) {
         const normalized = String(game?.sgf || "")
           .replace(/\s+/g, "")
@@ -3054,6 +3071,11 @@
         return `${archiveGameId(record)}|${String(record?.sgf || "").trim()}`;
       }
 
+      function currentBackupRecords() {
+        const deleted = getDeletedArchiveIds();
+        return getLocalArchiveRecords().filter((record) => !deleted.has(archiveGameId(record)));
+      }
+
       function normalizeBackupRecord(record) {
         const event = String(record?.event || "").trim();
         return {
@@ -3076,8 +3098,7 @@
       }
 
       function exportLocalArchiveBackup() {
-        const deleted = getDeletedArchiveIds();
-        const records = getLocalArchiveRecords().filter((record) => !deleted.has(archiveGameId(record)));
+        const records = currentBackupRecords();
         const payload = {
           app: "KifuArchive",
           type: "local-archive-backup",
@@ -3085,16 +3106,36 @@
           exportedAt: new Date().toISOString(),
           records,
         };
+        const filename = archiveBackupFilename();
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+        const file = new File([blob], filename, { type: "application/json" });
+        if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+          navigator.share({
+            title: "KifuArchive archive backup",
+            text: "Save this backup outside the browser, for example to Files or Google Drive.",
+            files: [file],
+          }).then(() => {
+            status.textContent = records.length ? `Archive backup shared (${records.length} records).` : "Empty archive backup shared.";
+            showSaveToast("Archive backup shared");
+          }).catch((error) => {
+            if (error?.name === "AbortError") return;
+            downloadBackupBlob(blob, filename, records.length);
+          });
+          return;
+        }
+        downloadBackupBlob(blob, filename, records.length);
+      }
+
+      function downloadBackupBlob(blob, filename, recordCount) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = archiveBackupFilename();
+        link.download = filename;
         document.body.append(link);
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-        status.textContent = records.length ? `Archive backup downloaded (${records.length} records).` : "Empty archive backup downloaded.";
+        status.textContent = recordCount ? `Archive backup downloaded (${recordCount} records). Keep this file outside browser storage.` : "Empty archive backup downloaded.";
         showSaveToast("Archive backup downloaded");
       }
 
@@ -3149,6 +3190,48 @@
         renderArchiveShell();
         status.textContent = `Imported ${incoming.length} archive records from backup.`;
         showSaveToast(`Imported ${incoming.length} records`);
+      }
+
+      async function saveCloudArchiveBackup() {
+        if (!(await ensureGoogleAuthForArchive())) return;
+        const records = currentBackupRecords();
+        const response = await fetch("/api/archive/local-backup", {
+          method: "PUT",
+          headers: { "content-type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ records }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          status.textContent = payload.error || "Could not save cloud archive backup.";
+          showSaveToast("Cloud backup failed");
+          return;
+        }
+        status.textContent = `Cloud backup saved (${payload.count ?? records.length} records).`;
+        showSaveToast("Cloud backup saved");
+      }
+
+      async function restoreCloudArchiveBackup() {
+        if (!(await ensureGoogleAuthForArchive())) return;
+        const response = await fetch("/api/archive/local-backup", {
+          headers: { accept: "application/json", ...authHeaders() },
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          status.textContent = payload.error || "Could not load cloud archive backup.";
+          showSaveToast("Cloud restore failed");
+          return;
+        }
+        const records = Array.isArray(payload.records) ? payload.records : [];
+        if (records.length === 0) {
+          status.textContent = "No cloud archive backup found for this Google account.";
+          showSaveToast("No cloud backup");
+          return;
+        }
+        await restoreLocalArchiveBackup(new File(
+          [JSON.stringify({ app: "KifuArchive", type: "local-archive-backup", records })],
+          "kifuarchive-cloud-backup.json",
+          { type: "application/json" }
+        ));
       }
       const publicCollectionSeeds = [
         { title: "By tournament", detail: "Events and round history" },
@@ -3286,7 +3369,6 @@
         const chips = document.createElement("div");
         chips.className = "chip-row";
         if (game.visibility) chips.append(makeChip(game.visibility, game.visibility));
-        if (game.opponentVisibility === "hidden") chips.append(makeChip("opponent hidden"));
         card.append(title, meta, fields, chips);
         if (options.detailButton) {
           const actions = document.createElement("div");
@@ -3739,7 +3821,7 @@
       function renderSummary(game = currentArchiveRecord({ includeArchiveIdentity: true })) {
         summaryChips.replaceChildren();
         summaryChips.append(makeChip(game.visibility || "private", game.visibility || "private"));
-        summaryChips.append(makeChip(game.opponentVisibility === "hidden" ? "opponent hidden" : "opponent shown"));
+        if (game.opponentVisibility === "hidden") summaryChips.append(makeChip("opponent hidden"));
         const hiddenLabel = game.opponentVisibility === "hidden" ? publicOpponentLabel(game) : "";
         const blackLabel = game.opponentVisibility === "hidden" && game.recorderColor === "white" ? hiddenLabel : game.blackPlayerName || "Unknown";
         const whiteLabel = game.opponentVisibility === "hidden" && game.recorderColor === "black" ? hiddenLabel : game.whitePlayerName || "Unknown";

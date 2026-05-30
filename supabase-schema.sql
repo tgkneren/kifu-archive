@@ -60,3 +60,23 @@ $$;
 create trigger public_games_set_updated_at
 before update on public.public_games
 for each row execute function public.set_updated_at();
+
+create table if not exists public.local_archive_backups (
+  id uuid primary key default gen_random_uuid(),
+  owner_user_id uuid not null unique,
+  records jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists local_archive_backups_owner_user_id_idx on public.local_archive_backups (owner_user_id);
+
+alter table public.local_archive_backups enable row level security;
+
+grant select, insert, update, delete on table public.local_archive_backups to service_role;
+
+drop trigger if exists local_archive_backups_set_updated_at on public.local_archive_backups;
+
+create trigger local_archive_backups_set_updated_at
+before update on public.local_archive_backups
+for each row execute function public.set_updated_at();

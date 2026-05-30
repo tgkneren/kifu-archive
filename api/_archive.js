@@ -4,7 +4,9 @@ const supabaseUrl = String(process.env.SUPABASE_URL || "").replace(/\/+$/, "");
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "";
 const supabasePublicGamesTable = process.env.SUPABASE_PUBLIC_GAMES_TABLE || "public_games";
+const supabaseLocalBackupsTable = process.env.SUPABASE_LOCAL_BACKUPS_TABLE || "local_archive_backups";
 const MAX_BODY_BYTES = 512 * 1024;
+const MAX_BACKUP_BODY_BYTES = 5 * 1024 * 1024;
 const MAX_SGF_BYTES = 300 * 1024;
 
 function requireSupabaseArchive() {
@@ -83,9 +85,9 @@ function fromDbRecord(row) {
   };
 }
 
-async function supabaseRequest(path, options = {}) {
+async function supabaseTableRequest(table, path, options = {}) {
   requireSupabaseArchive();
-  const response = await fetch(`${supabaseUrl}/rest/v1/${supabasePublicGamesTable}${path}`, {
+  const response = await fetch(`${supabaseUrl}/rest/v1/${table}${path}`, {
     ...options,
     headers: { ...supabaseHeaders(options.prefer), ...(options.headers || {}) },
   });
@@ -98,6 +100,10 @@ async function supabaseRequest(path, options = {}) {
     throw error;
   }
   return payload;
+}
+
+async function supabaseRequest(path, options = {}) {
+  return supabaseTableRequest(supabasePublicGamesTable, path, options);
 }
 
 export async function listPublicGames() {
@@ -159,6 +165,23 @@ export async function deletePublicGameByOwner(publicId, ownerUserId) {
   return rows.length > 0;
 }
 
+export async function getLocalArchiveBackup(ownerUserId) {
+  const rows = await supabaseTableRequest(
+    supabaseLocalBackupsTable,
+    `?owner_user_id=eq.${encodeURIComponent(ownerUserId)}&select=records,updated_at&limit=1`
+  );
+  return rows[0] ? { records: Array.isArray(rows[0].records) ? rows[0].records : [], updatedAt: rows[0].updated_at } : null;
+}
+
+export async function saveLocalArchiveBackup(ownerUserId, records) {
+  const rows = await supabaseTableRequest(supabaseLocalBackupsTable, "?on_conflict=owner_user_id", {
+    method: "POST",
+    prefer: "resolution=merge-duplicates,return=representation",
+    body: JSON.stringify([{ owner_user_id: ownerUserId, records, updated_at: new Date().toISOString() }]),
+  });
+  return rows[0] ? { records: Array.isArray(rows[0].records) ? rows[0].records : [], updatedAt: rows[0].updated_at } : null;
+}
+
 export async function requireAuthUser(request) {
   const authorization = request.headers.authorization || request.headers.Authorization || "";
   const token = String(authorization).replace(/^Bearer\s+/i, "").trim();
@@ -182,7 +205,7 @@ export async function requireAuthUser(request) {
   return user;
 }
 
-export async function readJsonBody(request) {
+export async function readJsonBody(request, maxBytes = MAX_BODY_BYTES) {
   if (request.body && typeof request.body === "object" && !Buffer.isBuffer(request.body)) return request.body;
   if (Buffer.isBuffer(request.body)) return JSON.parse(request.body.toString("utf8") || "{}");
   if (typeof request.body === "string") return JSON.parse(request.body || "{}");
@@ -190,7 +213,7 @@ export async function readJsonBody(request) {
   let size = 0;
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) {
+    if (size > maxBytes) {
       const error = new Error("Request body too large");
       error.statusCode = 413;
       throw error;
@@ -199,6 +222,10 @@ export async function readJsonBody(request) {
   }
   if (chunks.length === 0) return {};
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+
+export function readBackupJsonBody(request) {
+  return readJsonBody(request, MAX_BACKUP_BODY_BYTES);
 }
 
 export function sendJson(response, status, payload) {
