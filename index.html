@@ -1067,6 +1067,7 @@
       .handle-field {
         display: flex;
         align-items: center;
+        position: relative;
         min-height: 40px;
         border: 1px solid #d1c4ac;
         border-radius: 8px;
@@ -1076,8 +1077,11 @@
       }
 
       .handle-prefix {
-        flex: 0 0 auto;
-        padding-left: 12px;
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
         color: rgb(58 63 55 / 78%);
         font-weight: 850;
         line-height: 1;
@@ -1088,8 +1092,11 @@
         min-height: 38px;
         border: 0;
         border-radius: 0;
+        appearance: none;
         background: transparent;
-        padding: 0 10px 0 3px;
+        box-shadow: none;
+        outline: 0;
+        padding: 0 10px 0 28px;
       }
 
       .choice-actions {
@@ -2512,7 +2519,17 @@
               </label>
             </div>
             <div class="archive-list" id="publicManagePanel" aria-label="Manage my public records"></div>
-            <p class="section-kicker">Public Game Records</p>
+            <div class="archive-toolbar">
+              <p class="section-kicker">Public Game Records</p>
+              <button type="button" class="view-toggle" id="publicArchiveViewToggle" aria-pressed="false" title="Toggle thumbnail view" aria-label="Toggle public thumbnail view">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <rect x="4" y="4" width="6" height="6" rx="1"></rect>
+                  <rect x="14" y="4" width="6" height="6" rx="1"></rect>
+                  <rect x="4" y="14" width="6" height="6" rx="1"></rect>
+                  <rect x="14" y="14" width="6" height="6" rx="1"></rect>
+                </svg>
+              </button>
+            </div>
             <div class="archive-list" id="publicArchiveList" aria-label="Public archive games"></div>
           </div>
         </article>
@@ -2663,6 +2680,7 @@
       const myArchiveList = document.querySelector("#myArchiveList");
       const archiveViewToggle = document.querySelector("#archiveViewToggle");
       const publicArchiveList = document.querySelector("#publicArchiveList");
+      const publicArchiveViewToggle = document.querySelector("#publicArchiveViewToggle");
       const publicManagePanel = document.querySelector("#publicManagePanel");
       const publicCollections = document.querySelector("#publicCollections");
       const publicSearch = document.querySelector("#publicSearch");
@@ -2733,6 +2751,8 @@
       const LOCAL_ARCHIVE_KEY = "goban-local-archive-records-v1";
       const LOCAL_ARCHIVE_DELETED_KEY = "goban-local-archive-deleted-v1";
       const LOCAL_ARCHIVE_BACKUP_VERSION = 1;
+      const LOCAL_ARCHIVE_CLOUD_BACKUP_AT_KEY = "kifu-local-archive-cloud-backup-at-v1";
+      const CLOUD_BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
       const SHARE_TARGET_DB = "kifuarchive-share-target-v1";
       const SHARE_TARGET_STORE = "files";
       const SHARE_TARGET_KEY = "latest";
@@ -2745,6 +2765,7 @@
       let loadedFileHandle = null;
       let hasUnsavedExportChanges = false;
       let archiveViewMode = "list";
+      let publicArchiveViewMode = "list";
       let publicServerGames = [];
       let publicReadOnly = false;
       let activePublicGame = null;
@@ -3194,6 +3215,10 @@
 
       async function saveCloudArchiveBackup() {
         if (!(await ensureGoogleAuthForArchive())) return;
+        await saveCloudArchiveBackupNow({ quiet: false });
+      }
+
+      async function saveCloudArchiveBackupNow(options = {}) {
         const records = currentBackupRecords();
         const response = await fetch("/api/archive/local-backup", {
           method: "PUT",
@@ -3202,12 +3227,26 @@
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-          status.textContent = payload.error || "Could not save cloud archive backup.";
-          showSaveToast("Cloud backup failed");
+          if (!options.quiet) {
+            status.textContent = payload.error || "Could not save cloud archive backup.";
+            showSaveToast("Cloud backup failed");
+          }
           return;
         }
-        status.textContent = `Cloud backup saved (${payload.count ?? records.length} records).`;
-        showSaveToast("Cloud backup saved");
+        safeSetLocalStorage(LOCAL_ARCHIVE_CLOUD_BACKUP_AT_KEY, new Date().toISOString(), "Could not update cloud backup timestamp.");
+        if (!options.quiet) {
+          status.textContent = `Cloud backup saved (${payload.count ?? records.length} records).`;
+          showSaveToast("Cloud backup saved");
+        }
+      }
+
+      async function autoCloudArchiveBackupIfDue() {
+        authSession = getAuthSession();
+        if (!authSession || currentBackupRecords().length === 0) return;
+        const lastBackupAt = Date.parse(safeGetLocalStorage(LOCAL_ARCHIVE_CLOUD_BACKUP_AT_KEY, "") || "");
+        if (Number.isFinite(lastBackupAt) && Date.now() - lastBackupAt < CLOUD_BACKUP_INTERVAL_MS) return;
+        if (!(await loadAuthUser())) return;
+        await saveCloudArchiveBackupNow({ quiet: true });
       }
 
       async function restoreCloudArchiveBackup() {
@@ -3623,6 +3662,54 @@
         return card;
       }
 
+      function makePublicThumbCard(game) {
+        const card = document.createElement("article");
+        card.className = "thumb-card";
+        card.tabIndex = 0;
+        card.setAttribute("role", "button");
+        card.setAttribute("aria-label", `Open ${game.title}`);
+        card.append(makeBoardThumb(game, true));
+        const title = document.createElement("strong");
+        title.textContent = game.title;
+        const meta = document.createElement("span");
+        meta.textContent = [game.event, game.result].filter(Boolean).join(" / ");
+        card.append(title, meta);
+        const actions = document.createElement("div");
+        actions.className = "record-actions";
+        const openButton = document.createElement("button");
+        openButton.type = "button";
+        openButton.textContent = "Open";
+        openButton.addEventListener("click", (event) => {
+          event.stopPropagation();
+          openPublicGame(game);
+        });
+        actions.append(openButton);
+        if (game.ownedByCurrentUser) {
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className = "delete-action";
+          deleteButton.textContent = "Unpublish";
+          deleteButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            deletePublicGame(game.publicId).catch(() => {
+              status.textContent = "Could not unpublish this SGF.";
+            });
+          });
+          actions.append(deleteButton);
+        }
+        actions.append(makeInfoButton(game));
+        card.append(actions);
+        card.addEventListener("click", () => openPublicGame(game));
+        card.addEventListener("keydown", (event) => {
+          if (event.target !== card) return;
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openPublicGame(game);
+          }
+        });
+        return card;
+      }
+
       function makeLocalArchiveDeleteButton(game) {
         const button = document.createElement("button");
         button.type = "button";
@@ -3977,8 +4064,11 @@
         });
         renderPublicManagePanel();
         publicArchiveList.replaceChildren();
+        publicArchiveList.className = publicArchiveViewMode === "thumbs" ? "archive-thumb-grid" : "archive-list";
         games.forEach((game) => {
-          publicArchiveList.append(renderGameCard(game, { detailButton: true, onOpen: () => openPublicGame(game) }));
+          publicArchiveList.append(publicArchiveViewMode === "thumbs"
+            ? makePublicThumbCard(game)
+            : renderGameCard(game, { detailButton: true, onOpen: () => openPublicGame(game) }));
         });
         if (games.length === 0) {
           const empty = document.createElement("p");
@@ -4921,6 +5011,11 @@
         archiveViewToggle.setAttribute("aria-pressed", String(archiveViewMode === "thumbs"));
         renderMyArchive();
       });
+      publicArchiveViewToggle.addEventListener("click", () => {
+        publicArchiveViewMode = publicArchiveViewMode === "list" ? "thumbs" : "list";
+        publicArchiveViewToggle.setAttribute("aria-pressed", String(publicArchiveViewMode === "thumbs"));
+        renderPublicArchive();
+      });
 
       openButtons.forEach((button) => {
         button.addEventListener("click", () => {
@@ -4964,6 +5059,16 @@
       backupArchiveButton.addEventListener("click", exportLocalArchiveBackup);
       restoreArchiveButton.addEventListener("click", () => {
         archiveBackupFile.click();
+      });
+      cloudBackupButton.addEventListener("click", () => {
+        saveCloudArchiveBackup().catch(() => {
+          status.textContent = "Could not save cloud archive backup.";
+        });
+      });
+      cloudRestoreButton.addEventListener("click", () => {
+        restoreCloudArchiveBackup().catch(() => {
+          status.textContent = "Could not restore cloud archive backup.";
+        });
       });
       saveAsButton.addEventListener("click", () => {
         saveSGF().catch(() => {});
@@ -5193,7 +5298,10 @@
       syncInstallHelp();
       setupFileHandlingLaunch();
       consumeAuthCallback();
-      loadAuthUser().then(() => loadPublicArchive()).catch(() => loadPublicArchive());
+      loadAuthUser()
+        .then(() => loadPublicArchive())
+        .then(() => autoCloudArchiveBackupIfDue())
+        .catch(() => loadPublicArchive());
       setActiveView("board");
       const initialPublicId = publicIdFromLocation();
       if (initialPublicId) loadPublicGameById(initialPublicId);
