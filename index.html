@@ -2465,6 +2465,14 @@
               <span class="action-mark">PUB</span>
             </button>
             <p class="field-note">Publishing uses Google sign-in so your public records stay manageable across devices. Your email is never shown publicly.</p>
+            <button type="button" class="file-action secondary-action" id="backupArchiveButton">
+              <span><strong>Backup archive</strong><span>Download a portable copy of My Archive</span></span>
+              <span class="action-mark">JSON</span>
+            </button>
+            <button type="button" class="file-action secondary-action" id="restoreArchiveButton">
+              <span><strong>Restore backup</strong><span>Import a KifuArchive backup file</span></span>
+              <span class="action-mark">IN</span>
+            </button>
           </div>
           <div class="archive-toolbar">
             <p class="section-kicker">Local archive preview</p>
@@ -2495,6 +2503,7 @@
                 <input id="publicSearch" autocomplete="off" placeholder="Player, event, result, komi..." />
               </label>
             </div>
+            <div class="archive-list" id="publicManagePanel" aria-label="Manage my public records"></div>
             <p class="section-kicker">Public Game Records</p>
             <div class="archive-list" id="publicArchiveList" aria-label="Public archive games"></div>
           </div>
@@ -2566,12 +2575,13 @@
     </main>
 
     <input id="sgfFile" type="file" accept=".sgf,application/x-go-sgf,text/plain" hidden />
+    <input id="archiveBackupFile" type="file" accept=".json,application/json" hidden />
 
     <dialog class="identity-dialog" id="signInDialog">
       <form method="dialog" class="identity-card">
-        <h2>Sign in to publish</h2>
-        <p>Use Google to manage your public records across devices. You can still use KifuArchive locally without signing in. Your email will not be shown publicly.</p>
-        <label>
+        <h2 id="signInTitle">Sign in to publish</h2>
+        <p id="signInDescription">Use Google to manage your public records across devices. You can still use KifuArchive locally without signing in. Your email will not be shown publicly.</p>
+        <label id="publicHandleLabel">
           Public archive name
           <span class="handle-field">
             <span class="handle-prefix">@</span>
@@ -2635,12 +2645,15 @@
       const saveRecordButton = document.querySelector("[data-save-record]");
       const infoRecordButton = document.querySelector("[data-info-record]");
       const publishArchiveButton = document.querySelector("#publishArchiveButton");
+      const backupArchiveButton = document.querySelector("#backupArchiveButton");
+      const restoreArchiveButton = document.querySelector("#restoreArchiveButton");
       const saveRecordToArchiveButton = document.querySelector("#saveRecordToArchiveButton");
       const saveAsButton = document.querySelector("#saveAsButton");
       const overwriteButton = document.querySelector("#overwriteButton");
       const myArchiveList = document.querySelector("#myArchiveList");
       const archiveViewToggle = document.querySelector("#archiveViewToggle");
       const publicArchiveList = document.querySelector("#publicArchiveList");
+      const publicManagePanel = document.querySelector("#publicManagePanel");
       const publicCollections = document.querySelector("#publicCollections");
       const publicSearch = document.querySelector("#publicSearch");
       const publicShareTitle = document.querySelector("#publicShareTitle");
@@ -2652,6 +2665,7 @@
       const summaryChips = document.querySelector("#summaryChips");
       const summaryList = document.querySelector("#summaryList");
       const sgfFile = document.querySelector("#sgfFile");
+      const archiveBackupFile = document.querySelector("#archiveBackupFile");
       const gameName = document.querySelector("#gameName");
       const blackName = document.querySelector("#blackName");
       const whiteName = document.querySelector("#whiteName");
@@ -2690,6 +2704,9 @@
       const publicHandleInput = document.querySelector("#publicHandleInput");
       const cancelSignInButton = document.querySelector("#cancelSignInButton");
       const googleSignInButton = document.querySelector("#googleSignInButton");
+      const signInTitle = document.querySelector("#signInTitle");
+      const signInDescription = document.querySelector("#signInDescription");
+      const publicHandleLabel = document.querySelector("#publicHandleLabel");
       const opponentPrivacyDialog = document.querySelector("#opponentPrivacyDialog");
       const hideAsBlackButton = document.querySelector("#hideAsBlackButton");
       const hideAsWhiteButton = document.querySelector("#hideAsWhiteButton");
@@ -2705,6 +2722,10 @@
       const PUBLIC_HANDLE_KEY = "kifu-public-handle-v1";
       const LOCAL_ARCHIVE_KEY = "goban-local-archive-records-v1";
       const LOCAL_ARCHIVE_DELETED_KEY = "goban-local-archive-deleted-v1";
+      const LOCAL_ARCHIVE_BACKUP_VERSION = 1;
+      const SHARE_TARGET_DB = "kifuarchive-share-target-v1";
+      const SHARE_TARGET_STORE = "files";
+      const SHARE_TARGET_KEY = "latest";
       let autoplayTimer = null;
       let isRestoring = false;
       let lastPassPointerAt = 0;
@@ -2723,8 +2744,10 @@
       let authSession = null;
       let authUser = null;
       let pendingPublishRecord = null;
+      let signInMode = "publish";
       let privacyChoiceResolver = null;
       let deferredInstallPrompt = null;
+      let storagePersistenceRequested = false;
 
       function isStandaloneDisplay() {
         return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
@@ -2895,15 +2918,24 @@
         history.replaceState(null, "", `${location.pathname}${location.search}`);
       }
 
-      function showSignInDialog(record = null) {
+      function showSignInDialog(record = null, mode = "publish") {
         pendingPublishRecord = record;
+        signInMode = mode;
+        const isPublish = Boolean(record) || mode === "publish";
+        signInTitle.textContent = isPublish ? "Sign in to publish" : "Manage public records";
+        signInDescription.textContent = isPublish
+          ? "Use Google to manage your public records across devices. You can still use KifuArchive locally without signing in. Your email will not be shown publicly."
+          : "Sign in with Google to see and unpublish records you published from any device. Your email will not be shown publicly.";
+        publicHandleLabel.hidden = !isPublish;
+        googleSignInButton.textContent = isPublish ? "Continue with Google" : "Sign in with Google";
         publicHandleInput.value = publicHandleName(getPublicHandle());
         if (signInDialog?.showModal) signInDialog.showModal();
       }
 
       async function startGoogleSignIn() {
-        const handle = savePublicHandle(publicHandleInput.value);
-        if (!handle) {
+        const needsHandle = Boolean(pendingPublishRecord) || signInMode === "publish";
+        const handle = needsHandle ? savePublicHandle(publicHandleInput.value) : getPublicHandle();
+        if (needsHandle && !handle) {
           status.textContent = "Choose a public archive name before signing in.";
           return;
         }
@@ -2914,6 +2946,7 @@
           if (record) publishArchiveGame(record).catch(() => {
             status.textContent = "Could not publish SGF record.";
           });
+          else loadPublicArchive().catch(() => {});
           return;
         }
         const config = await loadAuthConfig();
@@ -2994,10 +3027,128 @@
 
       function saveLocalArchiveRecords(records) {
         safeSetLocalStorage(LOCAL_ARCHIVE_KEY, JSON.stringify(records), "Local archive save failed. Please export your SGF.");
+        requestArchivePersistence().catch(() => {});
       }
 
       function makeLocalArchiveId() {
         return `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      }
+
+      async function requestArchivePersistence() {
+        if (storagePersistenceRequested || !navigator.storage?.persist) return false;
+        storagePersistenceRequested = true;
+        try {
+          if (navigator.storage.persisted && await navigator.storage.persisted()) return true;
+          return await navigator.storage.persist();
+        } catch {
+          return false;
+        }
+      }
+
+      function archiveBackupFilename() {
+        const stamp = new Date().toISOString().slice(0, 10);
+        return `kifuarchive-backup-${stamp}.json`;
+      }
+
+      function archiveRecordFingerprint(record) {
+        return `${archiveGameId(record)}|${String(record?.sgf || "").trim()}`;
+      }
+
+      function normalizeBackupRecord(record) {
+        const event = String(record?.event || "").trim();
+        return {
+          ...record,
+          localArchiveId: typeof record?.localArchiveId === "string" && record.localArchiveId ? record.localArchiveId : makeLocalArchiveId(),
+          title: String(record?.title || "Imported SGF"),
+          event,
+          round: String(record?.round || ""),
+          date: String(record?.date || ""),
+          result: String(record?.result || ""),
+          visibility: ["private", "unlisted", "public"].includes(record?.visibility) ? record.visibility : "private",
+          opponentVisibility: record?.opponentVisibility === "hidden" ? "hidden" : "show",
+          boardSize: String(record?.boardSize || "19x19"),
+          recorderNickname: String(record?.recorderNickname || "Anonymous recorder"),
+          sgf: String(record?.sgf || ""),
+          group: event ? "tournament" : "other",
+          sourceType: "local",
+          savedAt: record?.savedAt || new Date().toISOString(),
+        };
+      }
+
+      function exportLocalArchiveBackup() {
+        const deleted = getDeletedArchiveIds();
+        const records = getLocalArchiveRecords().filter((record) => !deleted.has(archiveGameId(record)));
+        const payload = {
+          app: "KifuArchive",
+          type: "local-archive-backup",
+          version: LOCAL_ARCHIVE_BACKUP_VERSION,
+          exportedAt: new Date().toISOString(),
+          records,
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = archiveBackupFilename();
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        status.textContent = records.length ? `Archive backup downloaded (${records.length} records).` : "Empty archive backup downloaded.";
+        showSaveToast("Archive backup downloaded");
+      }
+
+      function readBackupRecords(payload) {
+        const records = Array.isArray(payload?.records) ? payload.records : Array.isArray(payload) ? payload : null;
+        if (!records) return null;
+        return records.filter((record) => record && typeof record === "object" && typeof record.sgf === "string" && record.sgf.trim());
+      }
+
+      async function restoreLocalArchiveBackup(file) {
+        let payload;
+        try {
+          payload = JSON.parse(await file.text());
+        } catch {
+          status.textContent = "Could not read archive backup. Choose a KifuArchive JSON backup file.";
+          showSaveToast("Backup import failed");
+          return;
+        }
+
+        const backupRecords = readBackupRecords(payload);
+        if (!backupRecords) {
+          status.textContent = "This file is not a KifuArchive archive backup.";
+          showSaveToast("Backup import failed");
+          return;
+        }
+        if (backupRecords.length === 0) {
+          status.textContent = "Backup contains no archive records.";
+          return;
+        }
+        if (!window.confirm(`Import ${backupRecords.length} archive records? Existing My Archive records will be kept.`)) return;
+
+        const existing = getLocalArchiveRecords();
+        const existingIds = new Set(existing.map((record) => record.localArchiveId).filter(Boolean));
+        const existingFingerprints = new Set(existing.map(archiveRecordFingerprint));
+        const incoming = [];
+
+        backupRecords.forEach((record) => {
+          const normalized = normalizeBackupRecord(record);
+          if (existingIds.has(normalized.localArchiveId) || existingFingerprints.has(archiveRecordFingerprint(normalized))) return;
+          existingIds.add(normalized.localArchiveId);
+          existingFingerprints.add(archiveRecordFingerprint(normalized));
+          incoming.push(normalized);
+        });
+
+        if (incoming.length === 0) {
+          status.textContent = "Backup import found no new records.";
+          showSaveToast("No new records");
+          return;
+        }
+
+        saveLocalArchiveRecords([...incoming, ...existing]);
+        renderArchiveShell();
+        status.textContent = `Imported ${incoming.length} archive records from backup.`;
+        showSaveToast(`Imported ${incoming.length} records`);
       }
       const publicCollectionSeeds = [
         { title: "By tournament", detail: "Events and round history" },
@@ -3742,6 +3893,7 @@
             .toLowerCase();
           return !query || haystack.includes(query);
         });
+        renderPublicManagePanel();
         publicArchiveList.replaceChildren();
         games.forEach((game) => {
           publicArchiveList.append(renderGameCard(game, { detailButton: true, onOpen: () => openPublicGame(game) }));
@@ -3752,6 +3904,50 @@
           empty.textContent = query ? "No public SGF records match this filter." : "No public SGF records yet.";
           publicArchiveList.append(empty);
         }
+      }
+
+      function renderPublicManagePanel() {
+        publicManagePanel.replaceChildren();
+        const section = document.createElement("details");
+        section.className = "archive-section";
+        section.open = true;
+
+        const summary = document.createElement("summary");
+        const ownedGames = publicServerGames.filter((game) => game.ownedByCurrentUser);
+        summary.textContent = authSession || authUser ? `My public records (${ownedGames.length})` : "Manage my public records";
+
+        const body = document.createElement("div");
+        body.className = "archive-section-body";
+
+        if (!authSession && !authUser) {
+          const action = document.createElement("button");
+          action.type = "button";
+          action.className = "file-action secondary-action";
+          const text = document.createElement("span");
+          const title = document.createElement("strong");
+          title.textContent = "Sign in with Google";
+          const detail = document.createElement("span");
+          detail.textContent = "See and unpublish records you published, even after cache or device changes.";
+          text.append(title, detail);
+          const mark = document.createElement("span");
+          mark.className = "action-mark";
+          mark.textContent = "G";
+          action.append(text, mark);
+          action.addEventListener("click", () => showSignInDialog(null, "manage"));
+          body.append(action);
+        } else if (ownedGames.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "record-meta";
+          empty.textContent = "No public records are owned by this Google account yet.";
+          body.append(empty);
+        } else {
+          ownedGames.forEach((game) => {
+            body.append(renderGameCard(game, { detailButton: true, onOpen: () => openPublicGame(game) }));
+          });
+        }
+
+        section.append(summary, body);
+        publicManagePanel.append(section);
       }
 
       function renderArchiveShell() {
@@ -4514,6 +4710,64 @@
         status.textContent = name ? `${name} loaded.` : "SGF loaded.";
       }
 
+      function openShareTargetDb() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(SHARE_TARGET_DB, 1);
+          request.onupgradeneeded = () => {
+            request.result.createObjectStore(SHARE_TARGET_STORE);
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      async function takeSharedSgf() {
+        if (!("indexedDB" in window)) return null;
+        const db = await openShareTargetDb();
+        try {
+          return await new Promise((resolve, reject) => {
+            const tx = db.transaction(SHARE_TARGET_STORE, "readwrite");
+            const store = tx.objectStore(SHARE_TARGET_STORE);
+            const request = store.get(SHARE_TARGET_KEY);
+            request.onsuccess = () => {
+              const record = request.result || null;
+              if (record) store.delete(SHARE_TARGET_KEY);
+              resolve(record);
+            };
+            request.onerror = () => reject(request.error);
+          });
+        } finally {
+          db.close();
+        }
+      }
+
+      async function consumeSharedSgfLaunch() {
+        if (!new URLSearchParams(location.search).has("share-target")) return;
+        const record = await takeSharedSgf();
+        history.replaceState(null, "", `${location.pathname}${location.hash}`);
+        if (!record?.text) {
+          status.textContent = "Could not open shared SGF.";
+          return;
+        }
+        await loadSGFText(record.text, record.name || "shared.sgf", null);
+        setActiveView("board");
+      }
+
+      function setupFileHandlingLaunch() {
+        if (!("launchQueue" in window) || !("LaunchParams" in window)) return;
+        window.launchQueue.setConsumer((launchParams) => {
+          const handles = Array.from(launchParams.files || []);
+          const [handle] = handles;
+          if (!handle?.getFile) return;
+          handle.getFile()
+            .then((file) => file.text().then((text) => loadSGFText(text, file.name || "opened.sgf", handle)))
+            .then(() => setActiveView("board"))
+            .catch(() => {
+              status.textContent = "Could not open SGF from this file.";
+            });
+        });
+      }
+
       async function openSGF() {
         if (window.showOpenFilePicker) {
           const [handle] = await window.showOpenFilePicker({
@@ -4624,6 +4878,10 @@
         publishCurrentRecord().catch(() => {
           status.textContent = "Could not publish SGF record.";
         });
+      });
+      backupArchiveButton.addEventListener("click", exportLocalArchiveBackup);
+      restoreArchiveButton.addEventListener("click", () => {
+        archiveBackupFile.click();
       });
       saveAsButton.addEventListener("click", () => {
         saveSGF().catch(() => {});
@@ -4764,6 +5022,15 @@
       deleteTournamentArchiveButton.addEventListener("click", () => deleteArchiveScope("tournament"));
       deleteOtherArchiveButton.addEventListener("click", () => deleteArchiveScope("other"));
       deleteAllArchiveButton.addEventListener("click", () => deleteArchiveScope("all"));
+      archiveBackupFile.addEventListener("change", async () => {
+        const file = archiveBackupFile.files?.[0];
+        if (!file) return;
+        try {
+          await restoreLocalArchiveBackup(file);
+        } finally {
+          archiveBackupFile.value = "";
+        }
+      });
       sgfFile.addEventListener("change", async () => {
         const file = sgfFile.files?.[0];
         if (!file) return;
@@ -4842,11 +5109,15 @@
 
       restoreState();
       syncInstallHelp();
+      setupFileHandlingLaunch();
       consumeAuthCallback();
       loadAuthUser().then(() => loadPublicArchive()).catch(() => loadPublicArchive());
       setActiveView("board");
       const initialPublicId = publicIdFromLocation();
       if (initialPublicId) loadPublicGameById(initialPublicId);
+      consumeSharedSgfLaunch().catch(() => {
+        status.textContent = "Could not open shared SGF.";
+      });
 
       if ("serviceWorker" in navigator) {
         let refreshingForUpdate = false;

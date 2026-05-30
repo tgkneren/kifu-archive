@@ -8,6 +8,31 @@
   "orientation": "portrait",
   "background_color": "#071019",
   "theme_color": "#0b1420",
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "application/x-go-sgf": [".sgf"],
+        "text/plain": [".sgf"],
+        "application/octet-stream": [".sgf"]
+      }
+    }
+  ],
+  "share_target": {
+    "action": "./share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "files": [
+        {
+          "name": "sgf",
+          "accept": ["application/x-go-sgf", "text/plain", ".sgf"]
+        }
+      ]
+    }
+  },
   "icons": [
     {
       "src": "./app-icon-192.png",

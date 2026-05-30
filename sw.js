@@ -1,4 +1,7 @@
-const CACHE_NAME = "goban-pwa-v83";
+const CACHE_NAME = "goban-pwa-v86";
+const SHARE_DB = "kifuarchive-share-target-v1";
+const SHARE_STORE = "files";
+const SHARE_KEY = "latest";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -27,9 +30,47 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
+function openShareDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(SHARE_DB, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(SHARE_STORE);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function storeSharedSgf(record) {
+  const db = await openShareDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(SHARE_STORE, "readwrite");
+    tx.objectStore(SHARE_STORE).put(record, SHARE_KEY);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
+  if (event.request.method === "POST" && url.pathname.endsWith("/share-target")) {
+    event.respondWith((async () => {
+      const formData = await event.request.formData();
+      const file = formData.get("sgf");
+      const text = file?.text ? await file.text() : String(formData.get("text") || "");
+      if (text.trim()) {
+        await storeSharedSgf({
+          name: file?.name || formData.get("title") || "shared.sgf",
+          text,
+          sharedAt: new Date().toISOString(),
+        });
+      }
+      return Response.redirect("./?share-target=1", 303);
+    })());
+    return;
+  }
+  if (event.request.method !== "GET") return;
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(fetch(event.request));
     return;
